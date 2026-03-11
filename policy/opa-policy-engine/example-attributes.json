@@ -1,0 +1,103 @@
+{
+    "attributes": {
+      "source": {
+        "address": {
+          "socketAddress": {
+            "protocol": 0,
+            "address": "192.168.1.10",
+            "portValue": 54321
+          }
+        },
+        "service": "",
+        "labels": {},
+        "principal": "",
+        "certificate": ""
+      },
+      "destination": {
+        "address": {
+          "socketAddress": {
+            "protocol": 0,
+            "address": "127.0.0.1",
+            "portValue": 3000
+          }
+        },
+        "service": "",
+        "labels": {},
+        "principal": "",
+        "certificate": ""
+      },
+      "metadataContext":{
+        "filterMetadata":{
+            "envoy.filters.http.jwt_authn":{
+              "jwt_payload":{
+                  "acr":"1",
+                  "allowed-origins":[
+                    "http://localhost:9999"
+                  ],
+                  "aud":"account",
+                  "azp":"openweb-ui",
+                  "email":"user@mcp.example.com",
+                  "email_verified":true,
+                  "exp":1767650079,
+                  "family_name":"User",
+                  "given_name":"MCP",
+                  "iat":1767646479,
+                  "iss":"http://localhost:8080/realms/mcp-realm",
+                  "jti":"onrtro:293c632d-cfaf-4e28-8609-b453d87506c9",
+                  "name":"MCP User",
+                  "preferred_username":"mcp-user",
+                  "realm_access":{
+                    "roles":[
+                        "supply-chain",
+                        "default-roles-mcp-realm",
+                        "ai-agents",
+                        "offline_access",
+                        "uma_authorization"
+                    ]
+                  },
+                  "resource_access":{
+                    "account":{
+                        "roles":[
+                          "manage-account",
+                          "manage-account-links",
+                          "view-profile"
+                        ]
+                    }
+                  },
+                  "scope":"profile email",
+                  "sid":"0da0011f-8611-4a67-a20c-e1fed6249dae",
+                  "sub":"e3349fa1-02c5-4d80-b497-4e7963b20148",
+                  "typ":"Bearer"
+              }
+            }
+        }
+      },      
+      "request": {
+        "time": "2025-01-27T12:00:00Z",
+        "http": {
+          "id": "trace-id-123",
+          "method": "POST",
+          "headers": {
+            "host": "example.com",
+            "content-type": "application/json",
+            "x-user": "alice"
+          },
+          "path": "/api/data",
+          "host": "example.com",
+          "scheme": "https",
+          "protocol": "HTTP/1.1",
+          "query": "",
+          "fragment": "",
+          "size": 0,
+          "body": "",
+          "rawBody": ""
+        }
+      },
+      "contextExtensions": {
+        "environment": "production"
+      },
+      "tlsSession": {
+        "sni": "example.com"
+      }
+    }
+  }

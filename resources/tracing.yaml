@@ -1,0 +1,21 @@
+binds:
+- listeners:
+  - routes:
+    - backends:
+      - mcp:
+          targets:
+          - name: everything
+            stdio:
+              args:
+              - '@modelcontextprotocol/server-everything'
+              cmd: npx
+      policies:
+        cors:
+          allowHeaders:
+          - "*"
+          allowOrigins:
+          - '*'
+  port: 3000
+config:
+  tracing:
+    otlpEndpoint: http://localhost:4317

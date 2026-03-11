@@ -1,0 +1,100 @@
+---
+apiVersion: enterpriseagentgateway.solo.io/v1alpha1
+kind: EnterpriseAgentgatewayParameters
+metadata:
+  name: agentgateway-params
+  namespace: enterprise-agentgateway
+spec:
+  sharedExtensions:
+    extauth:
+      enabled: true
+      image:
+        registry: gcr.io
+        repository: gloo-mesh/ext-auth-service
+        tag: "0.71.4"
+      deployment:
+        spec:
+          replicas: 1
+    ratelimiter:
+      enabled: true
+      image:
+        registry: gcr.io
+        repository: gloo-mesh/rate-limiter
+        tag: "0.16.4"
+      deployment:
+        spec:
+          replicas: 1
+    extCache:
+      enabled: true
+      image:
+        registry: docker.io
+        repository: redis
+        tag: "7.2.4-alpine"
+      deployment:
+        spec:
+          replicas: 1
+  env:
+    - name: STS_URI
+      value: http://enterprise-agentgateway.enterprise-agentgateway.svc.cluster.local:7777/elicitations/oauth2/token
+    - name: STS_AUTH_TOKEN
+      value: ./var/run/secrets/xds-tokens/xds-token          
+  logging:
+    level: info
+  #--- Image overrides for deployment ---
+  # image:
+  #   registry: ghcr.io
+  #   repository: agentgateway/agentgateway
+  #   tag: "0.11.0-alpha.5e5533a2c6bfb8914d69662b06aef48b4e7b85d5"
+  image:
+    registry: docker.io
+    repository: ceposta/agentgateway-enterprise # stop using this once token exchange is fixed
+    tag: "0.0.1"  
+  service:
+    metadata:
+      annotations:
+        service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    spec:
+      type: LoadBalancer
+  #--- Use rawConfig to inline custom configuration from ConfigMap ---
+  rawConfig:
+    config:
+      # --- Label all metrics using a value extracted from the request body
+      #metrics:
+      #  fields:
+      #    add:
+      #      modelId: json(request.body).modelId
+      logging:
+        fields:
+          add:
+            rq.headers.all: 'request.headers'
+            jwt: 'jwt'
+            request.body: json(request.body)
+            response.body: json(response.body)
+            rq.headers: 'flatten(request.headers)'
+            x-foo: 'request.headers["x-foo"]'
+            model: 'llm.requestModel'
+            provider: 'llm.provider'
+            prompt: 'llm.prompt'
+        format: json
+      tracing:
+        otlpProtocol: grpc
+        # otlpEndpoint: http://tempo-distributor.monitoring.svc.cluster.local:4317
+        otlpEndpoint: http://solo-enterprise-ui.kagent.svc.cluster.local:4317
+        randomSampling: 'true'
+        fields:
+          add:
+            gen_ai.operation.name: '"chat"'
+            gen_ai.system: "llm.provider"
+            gen_ai.prompt: 'llm.prompt'
+            gen_ai.completion: 'llm.completion.map(c, {"role":"assistant", "content": c})'
+            gen_ai.request.model: "llm.requestModel"
+            gen_ai.response.model: "llm.responseModel"
+            gen_ai.usage.completion_tokens: "llm.outputTokens"
+            gen_ai.usage.prompt_tokens: "llm.inputTokens"
+            gen_ai.request: 'flatten(llm.params)'
+            # --- Capture all request headers as a single map under rq.headers.all
+            rq.headers.all: 'request.headers'
+            # --- Capture claims from a verified JWT token if JWT policy is enabled
+            jwt: 'jwt'
+            # --- Capture the whole response body as JSON
+            response.body: 'json(response.body)'
