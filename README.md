@@ -32,10 +32,8 @@ The configuration (./config/agentgateway_config.yaml) uses ENV variables for som
 
 The env variables to set are in the `./config/example.env` file. Copy that to a `.env` file and you can run with docker compose.
 
-There are profiles you can use to run in certain custom configurations. For example:
-
 ```bash
-docker compose --profile all up -d
+docker compose up -d
 ```
 
 To smoke test, you can run:
@@ -70,25 +68,22 @@ docker compose logs -f agentgateway
 To bring the containers down:
 
 ```bash
-docker compose --profile all stop
+docker compose stop
 ```
 
 To get rid of everything
 
 ```bash
-docker compose --profile all down -v
+docker compose down -v
 ```
 
-If you just want to run the minimal agentgateway (ie, with ratelimit), run:
+
+#### Running with a local agentgateway
+
+You can stop the docker one:
 
 ```bash
-docker compose --profile minimal up -d
-```
-
-To run JUST the infra components (rate limit, observability, etc):
-
-```bash
-docker compose --profile infra up -d
+docker compose stop agentgateway
 ```
 
 This will allow you to agentgateway locally (from cli) and still connect up to the infra components. 
@@ -108,6 +103,9 @@ Make sure the python env is set up:
 ```bash
 python3.11 -m venv .venv
 source .venv/bin/activate
+pip install -r requirements.txt
+
+# may need to do this:
 pip install --no-cache-dir -r requirements.txt
 ```
 
@@ -125,6 +123,8 @@ Now you should be able to run this:
 ```bash
 ./run-openwebui.sh
 ```
+
+Now navigate to [http://localhost:9999](http://localhost:9999)
 
 ### Set up OpenAI connection
 
@@ -468,7 +468,7 @@ If you want to run it in Docker (recommended when running `agentgateway` via doc
 
 ```bash
 # Ensure your .env sets: FAILOVER_HOST="failover-429"
-docker compose --profile all up -d failover-429
+docker compose up -d failover-429
 ```
 
 Or run it locally with python:
