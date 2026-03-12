@@ -64,7 +64,7 @@ metadata:
 spec:
   parentRefs:
     - name: agentgateway
-      namespace: enterprise-agentgateway
+      namespace: agentgateway-system
   rules:
     - backendRefs:
         - name: httpbin

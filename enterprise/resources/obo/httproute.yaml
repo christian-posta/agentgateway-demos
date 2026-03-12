@@ -5,7 +5,7 @@ metadata:
 spec:
   parentRefs:
   - name: agentgateway
-    namespace: enterprise-agentgateway
+    namespace: agentgateway-system
   rules:
     - matches:
         - path:
@@ -29,7 +29,7 @@ metadata:
 spec:
   parentRefs:
   - name: agentgateway
-    namespace: enterprise-agentgateway
+    namespace: agentgateway-system
   rules:
     - matches:
         - path:

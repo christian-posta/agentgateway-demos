@@ -80,11 +80,11 @@ apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
   name: data-plane-monitoring-agentgateway-metrics
-  namespace: enterprise-agentgateway
+  namespace: agentgateway-system
 spec:
   namespaceSelector:
     matchNames:
-      - enterprise-agentgateway
+      - agentgateway-system
   podMetricsEndpoints:
     - port: metrics
   selector:

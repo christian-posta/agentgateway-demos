@@ -2,7 +2,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: mcp-oidc-extauth
-  namespace: enterprise-agentgateway
+  namespace: agentgateway-system
 spec:
   parentRefs:
   - name: agentgateway
@@ -20,7 +20,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: auth0-oauth-secret
-  namespace: enterprise-agentgateway
+  namespace: agentgateway-system
 type: extauth.solo.io/oauth
 stringData:
   client-secret: $AUTH0_CLIENT_SECRET
@@ -29,7 +29,7 @@ apiVersion: extauth.solo.io/v1
 kind: AuthConfig
 metadata:
   name: mcp-oidc
-  namespace: enterprise-agentgateway
+  namespace: agentgateway-system
 spec:
   configs:
   - oauth2:
@@ -40,7 +40,7 @@ spec:
         # Reference to the secret containing the client secret
         clientSecretRef:
           name: auth0-oauth-secret
-          namespace: enterprise-agentgateway
+          namespace: agentgateway-system
         
         # Issuer URL (ExtAuth uses this for OIDC discovery)
         issuerUrl: "https://ceposta-solo.auth0.com/"
@@ -77,7 +77,7 @@ apiVersion: enterpriseagentgateway.solo.io/v1alpha1
 kind: EnterpriseAgentgatewayPolicy
 metadata:
   name: mcp-oidc-extauth-policy
-  namespace: enterprise-agentgateway
+  namespace: agentgateway-system
 spec:
   targetRefs:
     - group: gateway.networking.k8s.io
@@ -89,7 +89,7 @@ spec:
     entExtAuth:
       authConfigRef:
         name: mcp-oidc
-        namespace: enterprise-agentgateway  
+        namespace: agentgateway-system  
     cors:
       allowOrigins:
         - "*"

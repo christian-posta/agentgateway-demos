@@ -2,11 +2,11 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: openai-policy
-  namespace: enterprise-agentgateway
+  namespace: agentgateway-system
 spec:
   parentRefs:
     - name: agentgateway
-      namespace: enterprise-agentgateway
+      namespace: agentgateway-system
   rules:
     - matches:
         - path:
@@ -25,7 +25,7 @@ apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: keycloak-jwks
-  namespace: enterprise-agentgateway
+  namespace: agentgateway-system
 spec:
   static:
     host: host.docker.internal  
@@ -37,7 +37,7 @@ apiVersion: enterpriseagentgateway.solo.io/v1alpha1
 kind: EnterpriseAgentgatewayPolicy
 metadata:
   name: openai-policy-policy
-  namespace: enterprise-agentgateway
+  namespace: agentgateway-system
 spec:
   targetRefs:
     - group: gateway.networking.k8s.io
@@ -75,6 +75,6 @@ spec:
       policy:
         matchExpressions:
           - "request.method == 'OPTIONS'"  # Allow OPTIONS
-          - "jwt.sub != null && 'supply-chain' in jwt.realm_access.roles"      
+          - "jwt.sub != null && jwt.realm_access.roles.contains('supply-chain')"      
 
 

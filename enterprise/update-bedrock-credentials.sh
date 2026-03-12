@@ -92,7 +92,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: bedrock-secret
-  namespace: enterprise-agentgateway
+  namespace: agentgateway-system
 type: Opaque
 stringData:
   accessKey: ${AWS_ACCESS_KEY_ID}

@@ -92,14 +92,14 @@ spec:
           protocol: TCP
         env:
         - name: MCP_TOOLS_URL
-          value: "http://agentgateway.enterprise-agentgateway.svc.cluster.local:8080/public/mcp"
+          value: "http://agentgateway.agentgateway-system.svc.cluster.local:8080/public/mcp"
         - name: GOOGLE_API_KEY
           valueFrom:
             secretKeyRef:
               name: google-credentials
               key: api-key
         - name: STS_WELL_KNOWN_URI
-          value: "http://enterprise-agentgateway.enterprise-agentgateway.svc.cluster.local:7777/.well-known/oauth-authorization-server"
+          value: "http://enterprise-agentgateway.agentgateway-system.svc.cluster.local:7777/.well-known/oauth-authorization-server"
         # Optional: Override token endpoint if well-known config returns unreachable URL
         # - name: STS_TOKEN_ENDPOINT_OVERRIDE
         #   value: "http://gloo-gateway.gloo-system.svc.cluster.local:7777/oauth/token"

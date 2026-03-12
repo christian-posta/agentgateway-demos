@@ -2,7 +2,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: public-oauth-entra
-  namespace: enterprise-agentgateway
+  namespace: agentgateway-system
 spec:
   parentRefs:
   - name: agentgateway
@@ -27,7 +27,7 @@ apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: public-oauth-entra-backend
-  namespace: enterprise-agentgateway
+  namespace: agentgateway-system
 spec:
   mcp:
     targets:
@@ -45,7 +45,7 @@ apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: entra-jwks
-  namespace: enterprise-agentgateway
+  namespace: agentgateway-system
 spec:
   static:
     host: login.microsoftonline.com
@@ -58,7 +58,7 @@ apiVersion: enterpriseagentgateway.solo.io/v1alpha1
 kind: EnterpriseAgentgatewayPolicy
 metadata:
   name: public-oauth-entra-policy
-  namespace: enterprise-agentgateway
+  namespace: agentgateway-system
 spec:
   targetRefs:
     - group: gateway.networking.k8s.io

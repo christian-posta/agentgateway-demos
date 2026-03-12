@@ -26,7 +26,7 @@ EOF
 
 # Get the pod IPs from enterprise-agentgateway deployment
 echo "Looking up pod IPs for enterprise-agentgateway..."
-POD_IPS=$(kubectl get pods -n enterprise-agentgateway -l app.kubernetes.io/name=enterprise-agentgateway -o jsonpath='{.items[*].status.podIP}')
+POD_IPS=$(kubectl get pods -n agentgateway-system -l app.kubernetes.io/name=enterprise-agentgateway -o jsonpath='{.items[*].status.podIP}')
 
 if [ -z "$POD_IPS" ]; then
   echo "ERROR: No pods found for enterprise-agentgateway. Make sure the deployment exists."

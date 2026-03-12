@@ -15,13 +15,13 @@ You also need an enterprise license key.
 From here, you need to portforward agentgateway
 
 ```bash
-kubectl port-forward deployments/agentgateway -n enterprise-agentgateway 3000:8080
+kubectl port-forward deployments/agentgateway -n agentgateway-system 3000:8080
 ```
 
 If you need the backend config:
 
 ```bash
-kubectl port-forward deployments/agentgateway -n enterprise-agentgateway 15000
+kubectl port-forward deployments/agentgateway -n agentgateway-system 15000
 
 curl http://localhost:15000/config_dump
 ```
@@ -44,7 +44,7 @@ source .env
 Perform necessary port forwards to access the UI and backend
 ```bash
 kubectl port-forward service/solo-enterprise-ui -n kagent  4000:80 
-kubectl port-forward deployments/agentgateway-enterprise -n enterprise-agentgateway 3000:8080 
+kubectl port-forward deployments/agentgateway-enterprise -n agentgateway-system 3000:8080 
 ```
 
 Get an access token to use for the exchange

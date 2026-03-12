@@ -1,17 +1,17 @@
 source .env
 
 ## Set up the secrets needed for the LLM routes
-kubectl create secret generic openai-secret -n enterprise-agentgateway \
+kubectl create secret generic openai-secret -n agentgateway-system \
 --from-literal="Authorization=Bearer $OPENAI_API_KEY" \
 --dry-run=client -oyaml | kubectl apply -f -
 
 
-kubectl create secret generic anthropic-secret -n enterprise-agentgateway \
+kubectl create secret generic anthropic-secret -n agentgateway-system \
 --from-literal="Authorization=$ANTHROPIC_API_KEY" \
 --dry-run=client -oyaml | kubectl apply -f -
 
 
-kubectl create secret generic gemini-secret -n enterprise-agentgateway \
+kubectl create secret generic gemini-secret -n agentgateway-system \
 --from-literal="Authorization=$GEMINI_API_KEY" \
 --dry-run=client -oyaml | kubectl apply -f -
 
@@ -21,7 +21,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: bedrock-secret
-  namespace: enterprise-agentgateway
+  namespace: agentgateway-system
 type: Opaque
 stringData:
   accessKey: ${AWS_ACCESS_KEY_ID}

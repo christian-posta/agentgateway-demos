@@ -2,11 +2,11 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: gemini-modelarmor
-  namespace: enterprise-agentgateway
+  namespace: agentgateway-system
 spec:
   parentRefs:
     - name: agentgateway
-      namespace: enterprise-agentgateway
+      namespace: agentgateway-system
   rules:
     - matches:
         - path:
@@ -23,7 +23,7 @@ apiVersion: v1
 kind: Endpoints
 metadata:
   name: modelarmor-webhook
-  namespace: enterprise-agentgateway
+  namespace: agentgateway-system
 subsets:
 - addresses:
   - ip: 192.168.65.254 # unfortunatley this needs to be an IP address :-/
@@ -35,7 +35,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: modelarmor-webhook
-  namespace: enterprise-agentgateway
+  namespace: agentgateway-system
 spec:
   ports:
   - port: 7272
@@ -46,7 +46,7 @@ apiVersion: enterpriseagentgateway.solo.io/v1alpha1
 kind: EnterpriseAgentgatewayPolicy
 metadata:
   name: gemini-modelarmor-prompt-guard
-  namespace: enterprise-agentgateway
+  namespace: agentgateway-system
   labels:
     app: agentgateway
 spec:
@@ -61,7 +61,7 @@ spec:
           - webhook:
               backendRef:
                 name: modelarmor-webhook
-                namespace: enterprise-agentgateway
+                namespace: agentgateway-system
                 kind: Service
                 port: 7272
               forwardHeaderMatches:

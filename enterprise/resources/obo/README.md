@@ -9,7 +9,7 @@ Agentgateway token exchange settings needs to trust the same identity provider a
 ```json
 tokenExchange:
   enabled: true
-  issuer: "enterprise-agentgateway.enterprise-agentgateway.svc.cluster.local:7777"
+  issuer: "enterprise-agentgateway.agentgateway-system.svc.cluster.local:7777"
   tokenExpiration: 24h
   oidc:
     secretName: "elicitation-oidc"
@@ -124,7 +124,7 @@ OBO Token:
   },
   "exp": 1769450288,
   "iat": 1769363888,
-  "iss": "enterprise-agentgateway.enterprise-agentgateway.svc.cluster.local:7777",
+  "iss": "enterprise-agentgateway.agentgateway-system.svc.cluster.local:7777",
   "nbf": 1769363888,
   "scope": "openid profile email",
   "sub": "e3349fa1-02c5-4d80-b497-4e7963b20148"

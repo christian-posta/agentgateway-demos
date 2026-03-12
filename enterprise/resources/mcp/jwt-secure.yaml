@@ -2,7 +2,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: jwt-secure-mcp
-  namespace: enterprise-agentgateway
+  namespace: agentgateway-system
 spec:
   parentRefs:
   - name: agentgateway
@@ -21,7 +21,7 @@ apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: keycloak-jwks
-  namespace: enterprise-agentgateway
+  namespace: agentgateway-system
 spec:
   static:
     host: host.docker.internal  
@@ -32,7 +32,7 @@ apiVersion: enterpriseagentgateway.solo.io/v1alpha1
 kind: EnterpriseAgentgatewayPolicy
 metadata:
   name: jwt-secure-mcp-policy
-  namespace: enterprise-agentgateway
+  namespace: agentgateway-system
 spec:
   targetRefs:
     - group: gateway.networking.k8s.io
@@ -47,8 +47,8 @@ spec:
           matchExpressions:
             - "mcp.tool.name == 'microsoft_docs_fetch'"
             # - "mcp.tool.name == 'web_search_exa'"
-            - "'ai-agents' in jwt.realm_access.roles && mcp.tool.target == 'deepwiki'"
-            - "'supply-chain' in jwt.realm_access.roles && (mcp.tool.target == 'microsoft' || mcp.tool.target == 'openapi')"
+            - "jwt.realm_access.roles.contains('ai-agents') && mcp.tool.target == 'deepwiki'"
+            - "jwt.realm_access.roles.contains('supply-chain') && (mcp.tool.target == 'microsoft' || mcp.tool.target == 'openapi')"
   traffic:
     jwtAuthentication:
       mode: Optional
