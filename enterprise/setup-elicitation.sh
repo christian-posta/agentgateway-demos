@@ -1,4 +1,6 @@
+set -a
 source .env
+set +a
 
 kubectl delete secret github-token-exchange -n agentgateway-system
 
