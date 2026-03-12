@@ -1,3 +1,4 @@
+aws-creds.env
 run-proxy-dev.sh
 .webui_secret_key
 virtual-keys.txt

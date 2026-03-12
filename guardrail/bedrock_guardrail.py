@@ -299,9 +299,9 @@ class BedrockGuardrailClient:
         anonymized_actions = []
         
         for assessment in assessments:
-            # Topic Policy
-            topic_policy = assessment.get('topicPolicy', {})
-            for topic in topic_policy.get('topics', []):
+            # Topic Policy (API may return null for policy when no config)
+            topic_policy = assessment.get('topicPolicy') or {}
+            for topic in (topic_policy.get('topics') or []):
                 topic_action = topic.get('action', '')
                 if topic_action:
                     violations.append(f"topic:{topic.get('name', 'unknown')}")
@@ -309,9 +309,9 @@ class BedrockGuardrailClient:
                         blocked_actions.append(f"topic:{topic.get('name')}")
                         logger.warning(f"Topic policy violation: {topic}")
             
-            # Content Policy
-            content_policy = assessment.get('contentPolicy', {})
-            for filter_item in content_policy.get('filters', []):
+            # Content Policy (API may return null)
+            content_policy = assessment.get('contentPolicy') or {}
+            for filter_item in (content_policy.get('filters') or []):
                 filter_action = filter_item.get('action', '')
                 if filter_action:
                     filter_type = filter_item.get('type', 'unknown')
@@ -320,25 +320,25 @@ class BedrockGuardrailClient:
                         blocked_actions.append(f"content:{filter_type}")
                         logger.warning(f"Content policy violation: {filter_item}")
             
-            # Word Policy
-            word_policy = assessment.get('wordPolicy', {})
-            for custom_word in word_policy.get('customWords', []):
+            # Word Policy (API may return null)
+            word_policy = assessment.get('wordPolicy') or {}
+            for custom_word in (word_policy.get('customWords') or []):
                 if custom_word.get('action'):
                     violations.append('word:custom')
                     if custom_word.get('action') == 'BLOCKED':
                         blocked_actions.append('word:custom')
                         logger.warning(f"Custom word violation: {custom_word.get('match')}")
             
-            for managed_word in word_policy.get('managedWordLists', []):
+            for managed_word in (word_policy.get('managedWordLists') or []):
                 if managed_word.get('action'):
                     violations.append(f"word:managed:{managed_word.get('type', 'unknown')}")
                     if managed_word.get('action') == 'BLOCKED':
                         blocked_actions.append(f"word:managed:{managed_word.get('type')}")
                         logger.warning(f"Managed word violation: {managed_word}")
             
-            # Sensitive Information Policy (PII)
-            sensitive_info_policy = assessment.get('sensitiveInformationPolicy', {})
-            for pii_entity in sensitive_info_policy.get('piiEntities', []):
+            # Sensitive Information Policy (PII) (API may return null)
+            sensitive_info_policy = assessment.get('sensitiveInformationPolicy') or {}
+            for pii_entity in (sensitive_info_policy.get('piiEntities') or []):
                 pii_action = pii_entity.get('action', '')
                 if pii_action:
                     pii_type = pii_entity.get('type', 'unknown')
@@ -350,7 +350,7 @@ class BedrockGuardrailClient:
                         anonymized_actions.append(f"pii:{pii_type}")
                         logger.info(f"PII detected (anonymized): {pii_type}")
             
-            for regex_match in sensitive_info_policy.get('regexes', []):
+            for regex_match in (sensitive_info_policy.get('regexes') or []):
                 if regex_match.get('action'):
                     violations.append(f"regex:{regex_match.get('name', 'unknown')}")
                     if regex_match.get('action') == 'BLOCKED':
@@ -359,9 +359,9 @@ class BedrockGuardrailClient:
                     elif regex_match.get('action') == 'ANONYMIZED':
                         anonymized_actions.append(f"regex:{regex_match.get('name')}")
             
-            # Contextual Grounding Policy
-            grounding_policy = assessment.get('contextualGroundingPolicy', {})
-            for filter_item in grounding_policy.get('filters', []):
+            # Contextual Grounding Policy (API may return null)
+            grounding_policy = assessment.get('contextualGroundingPolicy') or {}
+            for filter_item in (grounding_policy.get('filters') or []):
                 if filter_item.get('action'):
                     violations.append('grounding')
                     if filter_item.get('action') == 'BLOCKED':
@@ -411,26 +411,29 @@ class BedrockGuardrailClient:
         violations = []
         
         for assessment in assessments:
-            # Check all policy types
-            if assessment.get('topicPolicy', {}).get('topics'):
-                topics = [t.get('name') for t in assessment['topicPolicy']['topics'] if t.get('action')]
+            # Check all policy types (API may return null for any policy)
+            topic_policy = assessment.get('topicPolicy') or {}
+            if topic_policy.get('topics'):
+                topics = [t.get('name') for t in topic_policy['topics'] if t.get('action')]
                 if topics:
                     violations.append(f"Restricted topic(s): {', '.join(topics)}")
             
-            if assessment.get('contentPolicy', {}).get('filters'):
-                content_types = [f.get('type') for f in assessment['contentPolicy']['filters'] if f.get('action')]
+            content_policy = assessment.get('contentPolicy') or {}
+            if content_policy.get('filters'):
+                content_types = [f.get('type') for f in content_policy['filters'] if f.get('action')]
                 if content_types:
                     violations.append(f"Content policy: {', '.join(content_types).lower()}")
             
-            if assessment.get('wordPolicy', {}).get('customWords'):
+            word_policy = assessment.get('wordPolicy') or {}
+            if word_policy.get('customWords'):
                 violations.append("Custom word filter")
             
-            if assessment.get('wordPolicy', {}).get('managedWordLists'):
-                word_types = [w.get('type') for w in assessment['wordPolicy']['managedWordLists'] if w.get('action')]
+            if word_policy.get('managedWordLists'):
+                word_types = [w.get('type') for w in word_policy['managedWordLists'] if w.get('action')]
                 if word_types:
                     violations.append(f"Managed words: {', '.join(word_types).lower()}")
             
-            sensitive_info = assessment.get('sensitiveInformationPolicy', {})
+            sensitive_info = assessment.get('sensitiveInformationPolicy') or {}
             if sensitive_info.get('piiEntities'):
                 pii_types = [p.get('type') for p in sensitive_info['piiEntities'] if p.get('action')]
                 if pii_types:
@@ -439,7 +442,8 @@ class BedrockGuardrailClient:
             if sensitive_info.get('regexes'):
                 violations.append("Custom regex pattern match")
             
-            if assessment.get('contextualGroundingPolicy', {}).get('filters'):
+            grounding_policy = assessment.get('contextualGroundingPolicy') or {}
+            if grounding_policy.get('filters'):
                 violations.append("Contextual grounding check failed")
         
         if not violations:

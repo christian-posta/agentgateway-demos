@@ -25,6 +25,14 @@ The models we use in this demo:
 * Gemini: gemini-2.5-flash-lite
 * Bedrock: global.anthropic.claude-sonnet-4-20250514-v1:0
 
+## Environment files
+
+There are three `.env` files at the moment:
+
+`config/.env` -- gets loaded into docker compose for bootstrapping agentgateway
+`config/.env.local` -- gets loaded locally when runing agentgateawy standalone on local machine
+`enterprise/.env` -- gets convered to env vars/secrets for running in kuberentes
+
 
 ## Running agentgateway
 
@@ -231,7 +239,16 @@ To call Bedrock. Make sure your aws credentials are current. For example,
 aws sso login
 ```
 
-Refresh the credentials in `./enterprise/update-bedrock-credentials.sh` which will put them into a .env file in that folder. 
+For standalone, go to 
+
+```bash
+cd config
+./export-aws-sso-creds.sh
+```
+
+This creates a `./config/aws-creds.env` which will be imported to the ENV space in docker-compose.
+
+For enterprise deployment, refresh the credentials in `./enterprise/update-bedrock-credentials.sh` which will put them into a .env file in that folder. 
 
 ```bash
 curl http://localhost:3000/bedrock/v1/chat/completions \
@@ -278,6 +295,12 @@ authorization failed%
 ```
 
 This because we need to pass an SSO token for this to work. 
+
+NOTE: you will need the right client_secret for this to work and export it as 
+
+```bash
+export CLIENT_SECRET=""
+```
 
 ```bash
 TOKEN=$(./get-keycloak-token.sh)
@@ -375,7 +398,7 @@ _Note 2: at the time of writing, we don't send descriptors from the gateway to t
 
 _Note 3: for anthropic, we enable the `tokenize` setting which means agw will do estimations for tokens on the prompt request and then do a true-up afterward. otherwise, if tokenize is not set, then rate limit true up happens only after the actual token usage is returned (response) from the LLM_
 
-To exercise the rate limit, try send more than 3 requests to OpenAI, or a large prompt to Anthropic. 
+To exercise the rate limit, a prompt that produces a large response to Anthropic. 
 
 ```bash
 curl -v http://localhost:3000/anthropic/v1/chat/completions \
@@ -462,28 +485,10 @@ You can see metrics and traces from this UI.
 
 ## Failover:
 
-In a separate window, you'll need to start the dummy http server (this is what helps to trigger the conditions for failover).
-
-If you want to run it in Docker (recommended when running `agentgateway` via docker compose):
-
-```bash
-# Ensure your .env sets: FAILOVER_HOST="failover-429"
-docker compose up -d failover-429
-```
-
-Or run it locally with python:
-
-
-```bash
-source .venv/bin/activate
-python failover/http-429.py
-
-Dummy HTTP 429 server running on port 9959
-```
-
-Start agentgateway.
+Failover is implemented on the openai route. Try calling a model that we will simulate a rate limit/quota exceeded, and then try calling it again and see that it fails over.
 
 First request will fail:
+
 ```bash
 curl http://localhost:3000/failover/openai/v1/chat/completions \
   -H "Content-Type: application/json" \
@@ -1184,13 +1189,13 @@ If you connect with no auth token, you should see two "public tools":
 If you connect with a user token where they are in the `ai-agents` role, you will get the public tools plus all of the deep-wiki tools
 
 ```bash
-./get-keycloak-token.sh other-user
+./get-keycloak-token.sh other-user | pbcopy
 ```
 
 If you connect with a different user, on that's in the `supply-chain` role, you'll get all of the tools again, this type authorized:
 
 ```bash
-./get-keycloak-token.sh mcp-user
+./get-keycloak-token.sh mcp-user | pbcopy
 ```
 
 You can add this MCP server to your VS code and pass bearer tokens with the following config:
@@ -1353,6 +1358,9 @@ eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ik1FVTNOMFF3UVVKQlJUVTROa1pFUkRkRU9U
 Now we can write authorization rules about MCP tools.
 
 ## Microsoft Entra SSO for MCP
+
+
+This demo best works with Entra and VS Code!!!
 
 Please see this for a full breakdown:
 

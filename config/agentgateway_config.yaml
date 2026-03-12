@@ -7,10 +7,10 @@ config:
       add:
         authenticated: 'jwt.sub != null'
         gen_ai.system: 'llm.provider'
-        gen_ai.request.model: 'llm.request_model'
-        gen_ai.response.model: 'llm.response_model'
-        gen_ai.usage.input_tokens: 'llm.input_tokens'
-        gen_ai.usage.output_tokens: 'llm.output_tokens'
+        gen_ai.request.model: 'llm.requestModel'
+        gen_ai.response.model: 'llm.responseModel'
+        gen_ai.usage.input_tokens: 'llm.inputTokens'
+        gen_ai.usage.output_tokens: 'llm.outputTokens'
         gen_ai.operation.name: '"chat"'        
   metrics:
     fields:
@@ -25,6 +25,7 @@ config:
         token_audience: jwt.aud
         token_subject: jwt.sub      
         user_id: "jwt.sub" 
+        roles: "jwt.realm_access.roles"
         user_name: 'jwt.name'
         authenticated: 'jwt.sub != null'
         jwt_act: "jwt.act"
@@ -98,21 +99,23 @@ binds:
             "*": passthrough                      # Everything else passes through                
           promptGuard:
             request:
-            # - openAIModeration:
-            #     model: omni-moderation-latest
-            #   rejection:
-            #     status: 400
-            #     headers:
-            #       set:
-            #         content-type: "application/json"                
-            #     body: |
-            #       {
-            #         "error": {
-            #           "message": "Your request was rejected by our content moderation system",
-            #           "type": "invalid_request_error",
-            #           "code": "content_policy_violation"
-            #         }
-            #       }   
+            - openAIModeration:
+                policies:
+                  backendAuth:
+                    key: ${OPENAI_API_KEY}
+              rejection:
+                status: 400
+                headers:
+                  set:
+                    content-type: "application/json"                
+                body: |
+                  {
+                    "error": {
+                      "message": "Your request was rejected by our content moderation system",
+                      "type": "invalid_request_error",
+                      "code": "content_policy_violation"
+                    }
+                  }   
             - regex:
                 action: mask
                 rules:
@@ -163,7 +166,7 @@ binds:
         authorization:
           rules:
             - "request.method == 'OPTIONS'"  # Allow OPTIONS
-            - "jwt.sub != null && 'supply-chain' in jwt.realm_access.roles"                    
+            - "jwt.sub != null && jwt.realm_access.roles.contains('supply-chain')"                    
 
   # ------------------------------------------------------------
   # OPA Policy OpenAI route where we restrict to specific models
@@ -703,8 +706,8 @@ binds:
           # Allow anyone to call some tools
           - 'mcp.tool.name == "microsoft_docs_fetch"'
           - 'mcp.tool.name == "web_search_exa"'
-          - "'ai-agents' in jwt.realm_access.roles && mcp.tool.target == 'deepwiki'"
-          - "'supply-chain' in jwt.realm_access.roles && (mcp.tool.target == 'microsoft' || mcp.tool.target == 'openapi')"
+          - "jwt.realm_access.roles.contains('ai-agents') && mcp.tool.target == 'deepwiki'"
+          - "jwt.realm_access.roles.contains('supply-chain') && (mcp.tool.target == 'microsoft' || mcp.tool.target == 'openapi')"
         cors:
           allowOrigins:
           - "*"
@@ -759,8 +762,8 @@ binds:
         mcpAuthorization:
           rules:
           - 'mcp.tool.name == "microsoft_docs_fetch"'
-          - "'call:agent' in jwt.permissions && mcp.tool.target == 'deepwiki'"
-          - "'call:supply-chain' in jwt.permissions && (mcp.tool.target == 'microsoft' || mcp.tool.target == 'deepwiki')"        
+          - "jwt.permissions.contains('call:agent') && mcp.tool.target == 'deepwiki'"
+          - "jwt.permissions.contains('call:supply-chain') && (mcp.tool.target == 'microsoft' || mcp.tool.target == 'deepwiki')"        
         mcpAuthentication:
           issuer: https://ceposta-solo.auth0.com/
           jwks:
