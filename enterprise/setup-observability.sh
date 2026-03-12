@@ -6,6 +6,7 @@
 
 helm repo add grafana https://grafana.github.io/helm-charts
 helm repo update grafana
+
 helm upgrade --install tempo \
 grafana/tempo-distributed \
 --namespace monitoring \
@@ -105,6 +106,15 @@ kubectl label --local -f - \
   --dry-run=client -o yaml | \
 kubectl apply -f -
 
+
+kubectl create configmap agentgateway-dashboard \
+  --from-file=agentgateway-overview.json=./resources/grafana/agentgateway-grafana-dashboard-v2.json \
+  --namespace monitoring \
+  --dry-run=client -o yaml | \
+kubectl label --local -f - \
+  grafana_dashboard="1" \
+  --dry-run=client -o yaml | \
+kubectl apply -f -
 
 echo "Now you can port forward to Grafana and Prometheus:"
 echo "kubectl port-forward -n monitoring svc/grafana-prometheus 3000:3000"
