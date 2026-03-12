@@ -1,5 +1,7 @@
 # pick up local env variables
+set -a
 source .env
+set +a
 
 # Create namespace
 kubectl create namespace agentgateway-system
@@ -81,8 +83,6 @@ products:
     enabled: false
   agentgateway:
     enabled: true
-    # Only if AgentGateway controller is in another namespace (e.g. gloo-system)
-    # namespace: "gloo-system"
   mesh:
     enabled: false
   agentregistry:

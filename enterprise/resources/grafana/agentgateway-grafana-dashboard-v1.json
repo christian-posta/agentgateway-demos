@@ -15,11 +15,11 @@
       }
     ]
   },
-  "description": "Dashboard for monitoring AgentGateway - AI Gateway with rate limiting, content guardrails, and MCP support. Enhanced with organized metrics sections: Core GenAI metrics (all requests), Streaming metrics (requires stream=true), and Model-specific breakdowns.",
+  "description": "Unified dashboard for monitoring AgentGateway (OSS & Enterprise) - AI Gateway with rate limiting, content guardrails, and MCP support. Enhanced with organized metrics sections: Core GenAI metrics (all requests), Streaming metrics (requires stream=true), and Model-specific breakdowns.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 26,
+  "id": 23,
   "links": [],
   "panels": [
     {
@@ -45,6 +45,7 @@
           "color": {
             "mode": "thresholds"
           },
+          "decimals": 0,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -247,14 +248,6 @@
               {
                 "color": "green",
                 "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 5
-              },
-              {
-                "color": "red",
-                "value": 10
               }
             ]
           },
@@ -320,14 +313,6 @@
               {
                 "color": "green",
                 "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 5
-              },
-              {
-                "color": "red",
-                "value": 10
               }
             ]
           },
@@ -393,14 +378,6 @@
               {
                 "color": "green",
                 "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 5
-              },
-              {
-                "color": "red",
-                "value": 10
               }
             ]
           },
@@ -464,6 +441,199 @@
               {
                 "color": "green",
                 "value": 0
+              }
+            ]
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 5
+      },
+      "id": 59,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(agentgateway_requests_total{namespace=~\"$namespace\"}[$__rate_interval]))",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Request Rate",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "tps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 5
+      },
+      "id": 60,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\"}[$__rate_interval]))",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Input Tokens Per Second",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "tps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 5
+      },
+      "id": 63,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\"}[$__rate_interval]))",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Output Tokens Per Second",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "yellow",
@@ -482,7 +652,7 @@
       "gridPos": {
         "h": 4,
         "w": 4,
-        "x": 0,
+        "x": 12,
         "y": 5
       },
       "id": 48,
@@ -511,7 +681,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(increase(agentgateway_requests_total{namespace=~\"$namespace\", status=~\"401\"}[$__range])) / sum(increase(agentgateway_requests_total{namespace=~\"$namespace\"}[$__range]))",
+          "expr": "sum(increase(agentgateway_requests_total{namespace=~\"$namespace\", status=~\"401\"}[$__range])) / sum(increase(agentgateway_requests_total{namespace=~\"$namespace\"}[$__range])) or vector(0)",
           "format": "time_series",
           "instant": true,
           "legendFormat": "",
@@ -556,7 +726,7 @@
       "gridPos": {
         "h": 4,
         "w": 4,
-        "x": 4,
+        "x": 16,
         "y": 5
       },
       "id": 49,
@@ -630,7 +800,7 @@
       "gridPos": {
         "h": 4,
         "w": 4,
-        "x": 8,
+        "x": 20,
         "y": 5
       },
       "id": 3,
@@ -679,6 +849,219 @@
           "color": {
             "mode": "thresholds"
           },
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 1000
+              },
+              {
+                "color": "red",
+                "value": 5000
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 9
+      },
+      "id": 61,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\"}[$__rate_interval])) / sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\"}[$__rate_interval]))",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Average Input Tokens Per Request",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 1000
+              },
+              {
+                "color": "red",
+                "value": 5000
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 9
+      },
+      "id": 65,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\"}[$__rate_interval])) / sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\"}[$__rate_interval]))",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Average Output Tokens Per Request",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 9
+      },
+      "id": 67,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(agentgateway_response_bytes_total{namespace=~\"$namespace\"}[$__rate_interval])) / sum(rate(agentgateway_requests_total{namespace=~\"$namespace\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Average GenAI Response Size",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
           "custom": {
             "align": "auto",
             "cellOptions": {
@@ -709,7 +1092,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 350
+                "value": 250
               }
             ]
           },
@@ -820,10 +1203,10 @@
         ]
       },
       "gridPos": {
-        "h": 12,
+        "h": 8,
         "w": 12,
         "x": 12,
-        "y": 5
+        "y": 9
       },
       "id": 45,
       "options": {
@@ -844,7 +1227,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\"}[$__range])) by (gen_ai_response_model)",
+          "expr": "sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model!=\"unknown\"}[$__range])) by (gen_ai_response_model)",
           "format": "table",
           "instant": true,
           "legendFormat": "",
@@ -855,7 +1238,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\"}[$__range])) by (gen_ai_response_model)",
+          "expr": "sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model!=\"unknown\"}[$__range])) by (gen_ai_response_model)",
           "format": "table",
           "instant": true,
           "legendFormat": "",
@@ -866,7 +1249,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(increase(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\"}[$__range])) by (gen_ai_response_model)",
+          "expr": "sum(increase(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model!=\"unknown\"}[$__range])) by (gen_ai_response_model)",
           "format": "table",
           "instant": true,
           "legendFormat": "",
@@ -877,7 +1260,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.50, sum(rate(agentgateway_gen_ai_server_request_duration_bucket{namespace=~\"$namespace\"}[$__range])) by (le, gen_ai_response_model))",
+          "expr": "histogram_quantile(0.50, sum(rate(agentgateway_gen_ai_server_request_duration_bucket{namespace=~\"$namespace\", gen_ai_response_model!=\"unknown\"}[$__range])) by (le, gen_ai_response_model))",
           "format": "table",
           "instant": true,
           "legendFormat": "",
@@ -888,7 +1271,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum(rate(agentgateway_gen_ai_server_request_duration_bucket{namespace=~\"$namespace\"}[$__range])) by (le, gen_ai_response_model))",
+          "expr": "histogram_quantile(0.95, sum(rate(agentgateway_gen_ai_server_request_duration_bucket{namespace=~\"$namespace\", gen_ai_response_model!=\"unknown\"}[$__range])) by (le, gen_ai_response_model))",
           "format": "table",
           "instant": true,
           "legendFormat": "",
@@ -970,69 +1353,6 @@
               }
             ]
           },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 0,
-        "y": 9
-      },
-      "id": 7,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum(agentgateway_tokio_num_alive_tasks{namespace=~\"$namespace\"})",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "title": "Active Tasks",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              }
-            ]
-          },
           "unit": "cps"
         },
         "overrides": []
@@ -1040,13 +1360,13 @@
       "gridPos": {
         "h": 4,
         "w": 4,
-        "x": 4,
-        "y": 9
+        "x": 0,
+        "y": 13
       },
       "id": 5,
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
         "percentChangeColorMode": "standard",
@@ -1103,13 +1423,76 @@
       "gridPos": {
         "h": 4,
         "w": 4,
+        "x": 4,
+        "y": 13
+      },
+      "id": 7,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(agentgateway_tokio_num_alive_tasks{namespace=~\"$namespace\"})",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Active Tasks",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
         "x": 8,
-        "y": 9
+        "y": 13
       },
       "id": 6,
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
         "percentChangeColorMode": "standard",
@@ -1142,6 +1525,69 @@
       "type": "stat"
     },
     {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 81,
+      "panels": [],
+      "title": "Cost Tracking",
+      "type": "row"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 0,
+        "y": 18
+      },
+      "id": 87,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "| Model | Input (per 1M tokens) | Output (per 1M tokens) |\n|-------|----------------------|------------------------|\n| mock-gpt-4o | $${gpt4o_input_price} | $${gpt4o_output_price} |\n| mock-gpt-5-2 | $${gpt52_input_price} | $${gpt52_output_price} |\n| gpt-4o-mini-* | $${gpt4omini_input_price} | $${gpt4omini_output_price} |\n\n_Update prices using the variables at the top of the dashboard._\n\nReference: [OpenAI Pricing](https://platform.openai.com/docs/pricing)",
+        "mode": "markdown"
+      },
+      "pluginVersion": "12.3.0",
+      "title": "OpenAI Pricing (per 1M tokens)",
+      "type": "text"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 6,
+        "y": 18
+      },
+      "id": 90,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "| Model | Input (per 1M tokens) | Output (per 1M tokens) |\n|-------|----------------------|------------------------|\n| claude-haiku-4-5-* | $${claude_haiku_45_input_price} | $${claude_haiku_45_output_price} |\n| claude-3-5-haiku-* | $${claude_35_haiku_input_price} | $${claude_35_haiku_output_price} |\n| claude-sonnet-4-5-* | $${claude_sonnet_45_input_price} | $${claude_sonnet_45_output_price} |\n\n_Update prices using the variables at the top of the dashboard._\n\nReference: [Anthropic Pricing](https://www.anthropic.com/pricing#anthropic-api)",
+        "mode": "markdown"
+      },
+      "pluginVersion": "12.3.0",
+      "title": "Claude Pricing (per 1M tokens)",
+      "type": "text"
+    },
+    {
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -1149,8 +1595,43 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "mode": "palette-classic"
           },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 2,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -1161,17 +1642,146 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 18
+      },
+      "id": 86,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(\n  sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=\"mock-gpt-4o\"}[$__rate_interval])) * $gpt4o_input_price / 1000000 +\n  sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=\"mock-gpt-4o\"}[$__rate_interval])) * $gpt4o_output_price / 1000000\n) * 3600",
+          "instant": false,
+          "legendFormat": "mock-gpt-4o",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(\n  sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"mock-gpt-5.2\"}[$__rate_interval])) * $gpt52_input_price / 1000000 +\n  sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"mock-gpt-5.2\"}[$__rate_interval])) * $gpt52_output_price / 1000000\n) * 3600",
+          "legendFormat": "mock-gpt-5-2",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(\n  sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"gpt-4o-mini-.*\"}[$__rate_interval])) * $gpt4omini_input_price / 1000000 +\n  sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"gpt-4o-mini-.*\"}[$__rate_interval])) * $gpt4omini_output_price / 1000000\n) * 3600",
+          "legendFormat": "GPT-4o-mini",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(\n  sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"claude-haiku-4-5-.*\"}[$__rate_interval])) * $claude_haiku_45_input_price / 1000000 +\n  sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"claude-haiku-4-5-.*\"}[$__rate_interval])) * $claude_haiku_45_output_price / 1000000\n) * 3600",
+          "legendFormat": "claude-haiku-4-5",
+          "range": true,
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(\n  sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"claude-3-5-haiku-.*\"}[$__rate_interval])) * $claude_35_haiku_input_price / 1000000 +\n  sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"claude-3-5-haiku-.*\"}[$__rate_interval])) * $claude_35_haiku_output_price / 1000000\n) * 3600",
+          "legendFormat": "claude-3-5-haiku",
+          "range": true,
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(\n  sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"claude-sonnet-4-5-.*\"}[$__rate_interval])) * $claude_sonnet_45_input_price / 1000000 +\n  sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"claude-sonnet-4-5-.*\"}[$__rate_interval])) * $claude_sonnet_45_output_price / 1000000\n) * 3600",
+          "legendFormat": "claude-sonnet-4-5",
+          "range": true,
+          "refId": "F"
+        }
+      ],
+      "title": "Cost Rate ($/hour)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 1000
+              },
+              {
+                "color": "red",
+                "value": 1500
+              }
+            ]
+          },
+          "unit": "currencyUSD"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
+        "w": 6,
         "x": 0,
-        "y": 13
+        "y": 25
       },
-      "id": 53,
+      "id": 82,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -1197,13 +1807,776 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(kube_deployment_status_replicas{namespace=~\"$namespace\", deployment=~\".*agentgateway.*\", deployment!~\".*(enterprise-agentgateway|ext-auth|ext-cache|rate-limiter).*\"})",
+          "expr": "(\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=\"mock-gpt-4o\"}[1h])) or vector(0)) * $gpt4o_input_price / 1000000 +\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=\"mock-gpt-4o\"}[1h])) or vector(0)) * $gpt4o_output_price / 1000000 +\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"mock-gpt-5.2\"}[1h])) or vector(0)) * $gpt52_input_price / 1000000 +\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"mock-gpt-5.2\"}[1h])) or vector(0)) * $gpt52_output_price / 1000000 +\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"gpt-4o-mini-.*\"}[1h])) or vector(0)) * $gpt4omini_input_price / 1000000 +\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"gpt-4o-mini-.*\"}[1h])) or vector(0)) * $gpt4omini_output_price / 1000000 +\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"claude-haiku-4-5-.*\"}[1h])) or vector(0)) * $claude_haiku_45_input_price / 1000000 +\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"claude-haiku-4-5-.*\"}[1h])) or vector(0)) * $claude_haiku_45_output_price / 1000000 +\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"claude-3-5-haiku-.*\"}[1h])) or vector(0)) * $claude_35_haiku_input_price / 1000000 +\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"claude-3-5-haiku-.*\"}[1h])) or vector(0)) * $claude_35_haiku_output_price / 1000000 +\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"claude-sonnet-4-5-.*\"}[1h])) or vector(0)) * $claude_sonnet_45_input_price / 1000000 +\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"claude-sonnet-4-5-.*\"}[1h])) or vector(0)) * $claude_sonnet_45_output_price / 1000000\n) * 3600",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Cost (Last 1h)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 4000
+              },
+              {
+                "color": "red",
+                "value": 12000
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 25
+      },
+      "id": 84,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=\"mock-gpt-4o\"}[24h])) or vector(0)) * $gpt4o_input_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=\"mock-gpt-4o\"}[24h])) or vector(0)) * $gpt4o_output_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"mock-gpt-5.2\"}[24h])) or vector(0)) * $gpt52_input_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"mock-gpt-5.2\"}[24h])) or vector(0)) * $gpt52_output_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"gpt-4o-mini-.*\"}[24h])) or vector(0)) * $gpt4omini_input_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"gpt-4o-mini-.*\"}[24h])) or vector(0)) * $gpt4omini_output_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"claude-haiku-4-5-.*\"}[24h])) or vector(0)) * $claude_haiku_45_input_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"claude-haiku-4-5-.*\"}[24h])) or vector(0)) * $claude_haiku_45_output_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"claude-3-5-haiku-.*\"}[24h])) or vector(0)) * $claude_35_haiku_input_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"claude-3-5-haiku-.*\"}[24h])) or vector(0)) * $claude_35_haiku_output_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"claude-sonnet-4-5-.*\"}[24h])) or vector(0)) * $claude_sonnet_45_input_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"claude-sonnet-4-5-.*\"}[24h])) or vector(0)) * $claude_sonnet_45_output_price / 1000000\n)",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Cost (Last 24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 20000
+              },
+              {
+                "color": "red",
+                "value": 60000
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 25
+      },
+      "id": 85,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=\"mock-gpt-4o\"}[7d])) or vector(0)) * $gpt4o_input_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=\"mock-gpt-4o\"}[7d])) or vector(0)) * $gpt4o_output_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"mock-gpt-5.2\"}[7d])) or vector(0)) * $gpt52_input_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"mock-gpt-5.2\"}[7d])) or vector(0)) * $gpt52_output_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"gpt-4o-mini-.*\"}[7d])) or vector(0)) * $gpt4omini_input_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"gpt-4o-mini-.*\"}[7d])) or vector(0)) * $gpt4omini_output_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"claude-haiku-4-5-.*\"}[7d])) or vector(0)) * $claude_haiku_45_input_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"claude-haiku-4-5-.*\"}[7d])) or vector(0)) * $claude_haiku_45_output_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"claude-3-5-haiku-.*\"}[7d])) or vector(0)) * $claude_35_haiku_input_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"claude-3-5-haiku-.*\"}[7d])) or vector(0)) * $claude_35_haiku_output_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"claude-sonnet-4-5-.*\"}[7d])) or vector(0)) * $claude_sonnet_45_input_price / 1000000 +\n  (sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"claude-sonnet-4-5-.*\"}[7d])) or vector(0)) * $claude_sonnet_45_output_price / 1000000\n)",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Cost (Last 7d)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Based on last 24h average usage",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 100000
+              },
+              {
+                "color": "red",
+                "value": 150000
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 25
+      },
+      "id": 91,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(\n    (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=\"mock-gpt-4o\"}[24h])) or vector(0)) * $gpt4o_input_price / 1000000 +\n    (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=\"mock-gpt-4o\"}[24h])) or vector(0)) * $gpt4o_output_price / 1000000 +\n    (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"mock-gpt-5.2\"}[24h])) or vector(0)) * $gpt52_input_price / 1000000 +\n    (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"mock-gpt-5.2\"}[24h])) or vector(0)) * $gpt52_output_price / 1000000 +\n    (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"gpt-4o-mini-.*\"}[24h])) or vector(0)) * $gpt4omini_input_price / 1000000 +\n    (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"gpt-4o-mini-.*\"}[24h])) or vector(0)) * $gpt4omini_output_price / 1000000 +\n    (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"claude-haiku-4-5-.*\"}[24h])) or vector(0)) * $claude_haiku_45_input_price / 1000000 +\n    (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"claude-haiku-4-5-.*\"}[24h])) or vector(0)) * $claude_haiku_45_output_price / 1000000 +\n    (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"claude-3-5-haiku-.*\"}[24h])) or vector(0)) * $claude_35_haiku_input_price / 1000000 +\n    (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"claude-3-5-haiku-.*\"}[24h])) or vector(0)) * $claude_35_haiku_output_price / 1000000 +\n    (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"claude-sonnet-4-5-.*\"}[24h])) or vector(0)) * $claude_sonnet_45_input_price / 1000000 +\n    (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"claude-sonnet-4-5-.*\"}[24h])) or vector(0)) * $claude_sonnet_45_output_price / 1000000\n  ) * 3600 * 24 * 30",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Projected Monthly Cost (30d)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 29
+      },
+      "id": 88,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=\"mock-gpt-4o\"}[$__rate_interval])) or vector(0)) * $gpt4o_input_price / 1000000 / sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model=\"mock-gpt-4o\"}[$__rate_interval])) * 1000000",
+          "legendFormat": "mock-gpt-4o",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"mock-gpt-5.2\"}[$__rate_interval])) or vector(0)) * $gpt52_input_price / 1000000 / sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model=~\"mock-gpt-5.2\"}[$__rate_interval])) * 1000000",
+          "legendFormat": "mock-gpt-5-2",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"gpt-4o-mini-.*\"}[$__rate_interval])) or vector(0)) * $gpt4omini_input_price / 1000000 / sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model=~\"gpt-4o-mini-.*\"}[$__rate_interval])) * 1000000",
+          "legendFormat": "gpt-4o-mini",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"claude-haiku-4-5-.*\"}[$__rate_interval])) or vector(0)) * $claude_haiku_45_input_price / 1000000 / sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model=~\"claude-haiku-4-5-.*\"}[$__rate_interval])) * 1000000",
+          "legendFormat": "claude-haiku-4-5",
+          "range": true,
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"claude-3-5-haiku-.*\"}[$__rate_interval])) or vector(0)) * $claude_35_haiku_input_price / 1000000 / sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model=~\"claude-3-5-haiku-.*\"}[$__rate_interval])) * 1000000",
+          "legendFormat": "claude-3-5-haiku",
+          "range": true,
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"claude-sonnet-4-5-.*\"}[$__rate_interval])) or vector(0)) * $claude_sonnet_45_input_price / 1000000 / sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model=~\"claude-sonnet-4-5-.*\"}[$__rate_interval])) * 1000000",
+          "legendFormat": "claude-sonnet-4-5",
+          "range": true,
+          "refId": "F"
+        }
+      ],
+      "title": "Average Cost Per 1M Requests (Input) by Model",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 29
+      },
+      "id": 89,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=\"mock-gpt-4o\"}[$__rate_interval])) or vector(0)) * $gpt4o_output_price / 1000000 / sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model=\"mock-gpt-4o\"}[$__rate_interval])) * 1000000",
+          "legendFormat": "mock-gpt-4o",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"mock-gpt-5.2\"}[$__rate_interval])) or vector(0)) * $gpt52_output_price / 1000000 / sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model=~\"mock-gpt-5.2\"}[$__rate_interval])) * 1000000",
+          "legendFormat": "mock-gpt-5-2",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"gpt-4o-mini-.*\"}[$__rate_interval])) or vector(0)) * $gpt4omini_output_price / 1000000 / sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model=~\"gpt-4o-mini-.*\"}[$__rate_interval])) * 1000000",
+          "legendFormat": "gpt-4o-mini",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"claude-haiku-4-5-.*\"}[$__rate_interval])) or vector(0)) * $claude_haiku_45_output_price / 1000000 / sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model=~\"claude-haiku-4-5-.*\"}[$__rate_interval])) * 1000000",
+          "legendFormat": "claude-haiku-4-5",
+          "range": true,
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"claude-3-5-haiku-.*\"}[$__rate_interval])) or vector(0)) * $claude_35_haiku_output_price / 1000000 / sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model=~\"claude-3-5-haiku-.*\"}[$__rate_interval])) * 1000000",
+          "legendFormat": "claude-3-5-haiku",
+          "range": true,
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"claude-sonnet-4-5-.*\"}[$__rate_interval])) or vector(0)) * $claude_sonnet_45_output_price / 1000000 / sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model=~\"claude-sonnet-4-5-.*\"}[$__rate_interval])) * 1000000",
+          "legendFormat": "claude-sonnet-4-5",
+          "range": true,
+          "refId": "F"
+        }
+      ],
+      "title": "Average Cost Per 1M Requests (Output) by Model",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 29
+      },
+      "id": 92,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=\"mock-gpt-4o\"}[$__rate_interval])) or vector(0)) * $gpt4o_input_price / 1000000 +\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=\"mock-gpt-4o\"}[$__rate_interval])) or vector(0)) * $gpt4o_output_price / 1000000\n) / sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model=\"mock-gpt-4o\"}[$__rate_interval])) * 1000000",
+          "legendFormat": "mock-gpt-4o",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"mock-gpt-5.2\"}[$__rate_interval])) or vector(0)) * $gpt52_input_price / 1000000 +\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"mock-gpt-5.2\"}[$__rate_interval])) or vector(0)) * $gpt52_output_price / 1000000\n) / sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model=~\"mock-gpt-5.2\"}[$__rate_interval])) * 1000000",
+          "legendFormat": "mock-gpt-5-2",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"gpt-4o-mini-.*\"}[$__rate_interval])) or vector(0)) * $gpt4omini_input_price / 1000000 +\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"gpt-4o-mini-.*\"}[$__rate_interval])) or vector(0)) * $gpt4omini_output_price / 1000000\n) / sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model=~\"gpt-4o-mini-.*\"}[$__rate_interval])) * 1000000",
+          "legendFormat": "gpt-4o-mini",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"claude-haiku-4-5-.*\"}[$__rate_interval])) or vector(0)) * $claude_haiku_45_input_price / 1000000 +\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"claude-haiku-4-5-.*\"}[$__rate_interval])) or vector(0)) * $claude_haiku_45_output_price / 1000000\n) / sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model=~\"claude-haiku-4-5-.*\"}[$__rate_interval])) * 1000000",
+          "legendFormat": "claude-haiku-4-5",
+          "range": true,
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"claude-3-5-haiku-.*\"}[$__rate_interval])) or vector(0)) * $claude_35_haiku_input_price / 1000000 +\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"claude-3-5-haiku-.*\"}[$__rate_interval])) or vector(0)) * $claude_35_haiku_output_price / 1000000\n) / sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model=~\"claude-3-5-haiku-.*\"}[$__rate_interval])) * 1000000",
+          "legendFormat": "claude-3-5-haiku",
+          "range": true,
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"input\", gen_ai_response_model=~\"claude-sonnet-4-5-.*\"}[$__rate_interval])) or vector(0)) * $claude_sonnet_45_input_price / 1000000 +\n  (sum(rate(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\", gen_ai_token_type=\"output\", gen_ai_response_model=~\"claude-sonnet-4-5-.*\"}[$__rate_interval])) or vector(0)) * $claude_sonnet_45_output_price / 1000000\n) / sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model=~\"claude-sonnet-4-5-.*\"}[$__rate_interval])) * 1000000",
+          "legendFormat": "claude-sonnet-4-5",
+          "range": true,
+          "refId": "F"
+        }
+      ],
+      "title": "Average Cost Per 1M Requests (Total) by Model",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 37
+      },
+      "id": 66,
+      "panels": [],
+      "title": "Agentgateway Infrastructure Overview",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 38
+      },
+      "id": 53,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(kube_deployment_status_replicas{namespace=~\"$namespace\", deployment=~\".*agentgateway.*\", deployment!~\"$deployment_exclusion\"})",
           "legendFormat": "",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Agentgateway Expected Replicas",
+      "title": "Agentgateway Proxy Expected Replicas",
       "type": "stat"
     },
     {
@@ -1232,14 +2605,14 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 4,
-        "y": 13
+        "w": 8,
+        "x": 8,
+        "y": 38
       },
       "id": 54,
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
         "percentChangeColorMode": "standard",
@@ -1262,13 +2635,13 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(kube_deployment_status_replicas_available{namespace=~\"$namespace\", deployment=~\".*agentgateway.*\", deployment!~\".*(enterprise-agentgateway|ext-auth|ext-cache|rate-limiter).*\"})",
+          "expr": "sum(kube_deployment_status_replicas_available{namespace=~\"$namespace\", deployment=~\".*agentgateway.*\", deployment!~\"$deployment_exclusion\"})",
           "legendFormat": "",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Agentgateway Available Replicas",
+      "title": "Agentgateway Proxy Available Replicas",
       "type": "stat"
     },
     {
@@ -1305,14 +2678,14 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 8,
-        "y": 13
+        "w": 8,
+        "x": 16,
+        "y": 38
       },
       "id": 56,
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
         "percentChangeColorMode": "standard",
@@ -1335,13 +2708,422 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(kube_pod_container_status_restarts_total{namespace=~\"$namespace\", pod=~\".*agentgateway-.*\", pod!~\".*(enterprise-agentgateway|ext-auth|ext-cache|rate-limiter).*\"})",
+          "expr": "sum(kube_pod_container_status_restarts_total{namespace=~\"$namespace\", pod=~\"$proxy_pod_pattern\"})",
           "legendFormat": "",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Agentgateway Container Restarts",
+      "title": "Agentgateway Proxy Container Restarts",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          },
+          "unit": "cores"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 42
+      },
+      "id": 75,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "max(kube_pod_container_resource_requests{namespace=~\"$namespace\", pod=~\"$proxy_pod_pattern\", resource=\"cpu\"})",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Agentgateway Proxy CPU Requests (per pod)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          },
+          "unit": "cores"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 42
+      },
+      "id": 77,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(kube_pod_container_resource_requests{namespace=~\"$namespace\", pod=~\"$proxy_pod_pattern\", resource=\"cpu\"})",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Agentgateway Proxy CPU Requests (total)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 42
+      },
+      "id": 79,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(\n    sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"$proxy_pod_pattern\"}[$__rate_interval]))\n    /\n    sum(kube_pod_container_resource_requests{namespace=~\"$namespace\", pod=~\"$proxy_pod_pattern\", resource=\"cpu\"})\n  ) * 100",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Agentgateway Proxy Total CPU Utilization",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "decbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 42
+      },
+      "id": 80,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "max(kube_pod_container_resource_requests{namespace=~\"$namespace\", pod=~\"$proxy_pod_pattern\", resource=\"memory\"})",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Agentgateway Proxy MEM Requests (per pod)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "decbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 42
+      },
+      "id": 76,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(kube_pod_container_resource_requests{namespace=~\"$namespace\", pod=~\"$proxy_pod_pattern\", resource=\"memory\"})",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Agentgateway Proxy MEM Requests (total)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 42
+      },
+      "id": 78,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(\n    sum(container_memory_working_set_bytes{namespace=~\"$namespace\", pod=~\"$proxy_pod_pattern\"})\n    /\n    sum(kube_pod_container_resource_requests{namespace=~\"$namespace\", pod=~\"$proxy_pod_pattern\", resource=\"memory\"})\n  ) * 100",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Agentgateway Proxy Total MEM Utilization",
       "type": "stat"
     },
     {
@@ -1361,6 +3143,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -1377,6 +3160,7 @@
               "type": "linear"
             },
             "showPoints": "never",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -1392,7 +3176,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           },
@@ -1404,7 +3188,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 17
+        "y": 46
       },
       "id": 57,
       "options": {
@@ -1418,6 +3202,7 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
@@ -1429,12 +3214,12 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"agentgateway-.*\", cpu=\"total\"}[$__rate_interval])) by (pod)",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"$proxy_pod_pattern\", cpu=\"total\"}[$__rate_interval])) by (pod)",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
-      "title": "Agentgateway CPU Usage (cores)",
+      "title": "Agentgateway Proxy CPU Usage (cores)",
       "type": "timeseries"
     },
     {
@@ -1454,6 +3239,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -1470,6 +3256,7 @@
               "type": "linear"
             },
             "showPoints": "never",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -1485,7 +3272,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           },
@@ -1497,7 +3284,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 17
+        "y": 46
       },
       "id": 58,
       "options": {
@@ -1511,6 +3298,7 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
@@ -1522,12 +3310,623 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(container_memory_working_set_bytes{namespace=~\"$namespace\", pod=~\"agentgateway-.*\"}) by (pod)",
+          "expr": "sum(container_memory_working_set_bytes{namespace=~\"$namespace\", pod=~\"$proxy_pod_pattern\"}) by (pod)",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
-      "title": "Agentgateway Memory Usage",
+      "title": "Agentgateway Proxy Memory Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 54
+      },
+      "id": 73,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"agentgateway-.*\", cpu=\"total\"}[$__rate_interval])) by (pod)\n/\nsum(kube_pod_container_resource_requests{namespace=~\"$namespace\", pod=~\"agentgateway-.*\", resource=\"cpu\"}) by (pod)\n* 100",
+          "legendFormat": "{{pod}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Agentgateway Proxy CPU Utilization vs Requests (%)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 54
+      },
+      "id": 74,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(container_memory_working_set_bytes{namespace=~\"$namespace\", pod=~\"agentgateway-.*\"}) by (pod)\n/\nsum(kube_pod_container_resource_requests{namespace=~\"$namespace\", pod=~\"agentgateway-.*\", resource=\"memory\"}) by (pod)\n* 100",
+          "legendFormat": "{{pod}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Agentgateway Proxy Memory Utilization vs Requests (%)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 62
+      },
+      "id": 68,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(kube_deployment_status_replicas{namespace=~\"$namespace\", deployment=\"$control_plane_deployment\"})",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Agentgateway Control Plane Expected Replicas",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 8,
+        "y": 62
+      },
+      "id": 69,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(kube_deployment_status_replicas_available{namespace=~\"$namespace\", deployment=\"$control_plane_deployment\"})",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Agentgateway Control Plane Available Replicas",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 62
+      },
+      "id": 70,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(kube_pod_container_status_restarts_total{namespace=~\"$namespace\", pod=~\"agentgateway-.*\"})",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Agentgateway Control Plane Container Restarts",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 66
+      },
+      "id": 71,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"agentgateway-.*\", cpu=\"total\"}[$__rate_interval])) by (pod)",
+          "legendFormat": "{{pod}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Agentgateway Control Plane CPU Usage (cores)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 66
+      },
+      "id": 72,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(container_memory_working_set_bytes{namespace=~\"$namespace\", pod=~\"agentgateway-.*\"}) by (pod)",
+          "legendFormat": "{{pod}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Agentgateway Control Plane Memory Usage",
       "type": "timeseries"
     },
     {
@@ -1536,7 +3935,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 74
       },
       "id": 13,
       "panels": [],
@@ -1572,7 +3971,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 26
+        "y": 75
       },
       "id": 30,
       "options": {
@@ -1603,7 +4002,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(increase(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\"}[$__range])) by (gen_ai_response_model)",
+          "expr": "sum(increase(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model!=\"unknown\"}[$__range])) by (gen_ai_response_model)",
           "format": "time_series",
           "instant": true,
           "legendFormat": "{{gen_ai_response_model}}",
@@ -1675,7 +4074,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 26
+        "y": 75
       },
       "id": 29,
       "options": {
@@ -1701,7 +4100,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(increase(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\"}[$__range]))\nby (gen_ai_response_model)",
+          "expr": "sum(increase(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model!=\"unknown\"}[$__range]))\nby (gen_ai_response_model)",
           "legendFormat": "{{gen_ai_response_model}}",
           "range": true,
           "refId": "A"
@@ -1772,7 +4171,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 34
+        "y": 83
       },
       "id": 14,
       "options": {
@@ -1867,7 +4266,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 34
+        "y": 83
       },
       "id": 28,
       "options": {
@@ -1894,7 +4293,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\"}[$__rate_interval])) by (gen_ai_response_model)",
+          "expr": "sum(rate(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\", gen_ai_response_model!=\"unknown\"}[$__rate_interval])) by (gen_ai_response_model)",
           "legendFormat": "{{gen_ai_response_model}}",
           "range": true,
           "refId": "A"
@@ -1977,7 +4376,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 42
+        "y": 91
       },
       "id": 26,
       "options": {
@@ -1998,7 +4397,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "topk(10, sum(increase(agentgateway_requests_total{namespace=~\"$namespace\"}[$__range])) by (route, method))",
+          "expr": "topk(10, sum(increase(agentgateway_requests_total{namespace=~\"$namespace\", route!=\"unknown\"}[$__range])) by (route, method))",
           "format": "table",
           "instant": true,
           "legendFormat": "",
@@ -2009,7 +4408,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "topk(10, histogram_quantile(0.95, sum(rate(agentgateway_request_duration_seconds_bucket{namespace=~\"$namespace\"}[$__range])) by (le, route, method)))",
+          "expr": "topk(10, histogram_quantile(0.95, sum(rate(agentgateway_request_duration_seconds_bucket{namespace=~\"$namespace\", route!=\"unknown\"}[$__range])) by (le, route, method)))",
           "format": "table",
           "instant": true,
           "legendFormat": "",
@@ -2020,7 +4419,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "topk(10, sum(increase(agentgateway_response_bytes_total{namespace=~\"$namespace\"}[$__range])) by (route, method))",
+          "expr": "topk(10, sum(increase(agentgateway_response_bytes_total{namespace=~\"$namespace\", route!=\"unknown\"}[$__range])) by (route, method))",
           "format": "table",
           "instant": true,
           "legendFormat": "",
@@ -2121,7 +4520,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 51
+        "y": 100
       },
       "id": 16,
       "options": {
@@ -2235,7 +4634,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 59
+        "y": 108
       },
       "id": 37,
       "options": {
@@ -2261,7 +4660,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum(rate(agentgateway_gen_ai_server_request_duration_bucket{namespace=~\"$namespace\"}[$__rate_interval])) by (le, gen_ai_response_model))",
+          "expr": "histogram_quantile(0.95, sum(rate(agentgateway_gen_ai_server_request_duration_bucket{namespace=~\"$namespace\", gen_ai_response_model!=\"unknown\"}[$__rate_interval])) by (le, gen_ai_response_model))",
           "legendFormat": "{{gen_ai_response_model}}",
           "refId": "A"
         }
@@ -2331,7 +4730,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 67
+        "y": 116
       },
       "id": 34,
       "options": {
@@ -2426,7 +4825,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 67
+        "y": 116
       },
       "id": 32,
       "options": {
@@ -2451,7 +4850,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(rate(agentgateway_response_bytes_total{namespace=~\"$namespace\"}[$__rate_interval])) by (route)",
+          "expr": "sum(rate(agentgateway_response_bytes_total{namespace=~\"$namespace\", route!=\"unknown\"}[$__rate_interval])) by (route)",
           "legendFormat": "{{route}}",
           "refId": "A"
         }
@@ -2521,7 +4920,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 75
+        "y": 124
       },
       "id": 33,
       "options": {
@@ -2546,8 +4945,10 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
+          "editorMode": "code",
           "expr": "sum(rate(agentgateway_response_bytes_total{namespace=~\"$namespace\"}[$__rate_interval])) / sum(rate(agentgateway_requests_total{namespace=~\"$namespace\"}[$__rate_interval]))",
           "legendFormat": "Avg Response Size",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -2616,7 +5017,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 75
+        "y": 124
       },
       "id": 35,
       "options": {
@@ -2641,7 +5042,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(rate(agentgateway_response_bytes_total{namespace=~\"$namespace\"}[$__rate_interval])) by (backend)",
+          "expr": "sum(rate(agentgateway_response_bytes_total{namespace=~\"$namespace\", backend!=\"unknown\"}[$__rate_interval])) by (backend)",
           "legendFormat": "{{backend}}",
           "refId": "A"
         }
@@ -2655,11 +5056,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 83
+        "y": 132
       },
       "id": 38,
       "panels": [],
-      "title": "Usage Tracking by Organization and Team",
+      "title": "Usage Tracking by Organization",
       "type": "row"
     },
     {
@@ -2724,7 +5125,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 84
+        "y": 133
       },
       "id": 39,
       "options": {
@@ -2776,102 +5177,6 @@
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "showValues": false,
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 84
-      },
-      "id": 40,
-      "options": {
-        "legend": {
-          "calcs": [
-            "sum",
-            "last"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum(increase(agentgateway_gen_ai_server_request_duration_count{namespace=~\"$namespace\"}[$__rate_interval])) by (user_team)",
-          "legendFormat": "{{user_team}}",
-          "refId": "A"
-        }
-      ],
-      "title": "LLM Requests by Team",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "bars",
             "fillOpacity": 80,
             "gradientMode": "none",
@@ -2915,8 +5220,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 92
+        "x": 12,
+        "y": 133
       },
       "id": 41,
       "options": {
@@ -2951,108 +5256,12 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "bars",
-            "fillOpacity": 80,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "showValues": false,
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 92
-      },
-      "id": 42,
-      "options": {
-        "legend": {
-          "calcs": [
-            "sum",
-            "last"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum(increase(agentgateway_gen_ai_client_token_usage_sum{namespace=~\"$namespace\"}[$__rate_interval])) by (user_team, gen_ai_token_type)",
-          "legendFormat": "{{user_team}} - {{gen_ai_token_type}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Token Consumption by Team",
-      "type": "timeseries"
-    },
-    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 100
+        "y": 141
       },
       "id": 18,
       "panels": [],
@@ -3121,7 +5330,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 101
+        "y": 142
       },
       "id": 19,
       "options": {
@@ -3146,8 +5355,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(increase(agentgateway_mcp_requests_total{namespace=~\"$namespace\"}[$__rate_interval])) by (tool)",
-          "legendFormat": "{{tool}}",
+          "expr": "sum(increase(agentgateway_mcp_requests_total{namespace=~\"$namespace\",method=\"tools/call\"}[$__rate_interval])) by (resource)",
+          "legendFormat": "{{resource}}",
           "refId": "A"
         }
       ],
@@ -3216,7 +5425,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 101
+        "y": 142
       },
       "id": 20,
       "options": {
@@ -3250,12 +5459,427 @@
       "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Latency",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "P50"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "P95"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "P99"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 150
+      },
+      "id": 21,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.50, sum(rate(agentgateway_request_duration_seconds_bucket{namespace=~\"$namespace\",route=~\".*mcp.*\"}[5m])) by (le, route))",
+          "legendFormat": "{{route}} - P50",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum(rate(agentgateway_request_duration_seconds_bucket{namespace=~\"$namespace\",route=~\".*mcp.*\"}[5m])) by (le, route))",
+          "legendFormat": "{{route}} - P95",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.99, sum(rate(agentgateway_request_duration_seconds_bucket{namespace=~\"$namespace\",route=~\".*mcp.*\"}[5m])) by (le, route))",
+          "legendFormat": "{{route}} - P99",
+          "refId": "C"
+        }
+      ],
+      "title": "MCP Request Latency (P50, P95, P99)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Requests/s",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "reqps"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*Success.*"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*4xx.*"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*5xx.*"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 158
+      },
+      "id": 22,
+      "options": {
+        "legend": {
+          "calcs": [
+            "sum"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(agentgateway_requests_total{namespace=~\"$namespace\",route=~\".*mcp.*\",status=~\"2..\"}[5m])) by (route)",
+          "legendFormat": "{{route}} - Success (2xx)",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(agentgateway_requests_total{namespace=~\"$namespace\",route=~\".*mcp.*\",status=~\"4..\"}[5m])) by (route, status)",
+          "legendFormat": "{{route}} - 4xx ({{status}})",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(agentgateway_requests_total{namespace=~\"$namespace\",route=~\".*mcp.*\",status=~\"5..\"}[5m])) by (route, status)",
+          "legendFormat": "{{route}} - 5xx ({{status}})",
+          "refId": "C"
+        }
+      ],
+      "title": "MCP Error Rate (Success vs Errors)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Requests/s",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 158
+      },
+      "id": 23,
+      "options": {
+        "legend": {
+          "calcs": [
+            "sum",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(agentgateway_mcp_requests_total{namespace=~\"$namespace\"}[5m])) by (route)",
+          "legendFormat": "{{route}}",
+          "refId": "A"
+        }
+      ],
+      "title": "MCP Requests by Route",
+      "type": "timeseries"
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 109
+        "y": 166
       },
       "id": 27,
       "panels": [],
@@ -3324,7 +5948,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 110
+        "y": 167
       },
       "id": 17,
       "options": {
@@ -3429,7 +6053,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 110
+        "y": 167
       },
       "id": 15,
       "options": {
@@ -3478,7 +6102,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 118
+        "y": 175
       },
       "id": 8,
       "panels": [],
@@ -3547,7 +6171,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 119
+        "y": 176
       },
       "id": 9,
       "options": {
@@ -3689,7 +6313,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 119
+        "y": 176
       },
       "id": 10,
       "options": {
@@ -3785,7 +6409,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 127
+        "y": 184
       },
       "id": 11,
       "options": {
@@ -3899,7 +6523,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 127
+        "y": 184
       },
       "id": 12,
       "options": {
@@ -3939,9 +6563,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 135
+        "y": 192
       },
-      "id": 21,
+      "id": 93,
       "panels": [],
       "title": "Connection & Runtime Metrics",
       "type": "row"
@@ -4008,9 +6632,9 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 136
+        "y": 193
       },
-      "id": 22,
+      "id": 94,
       "options": {
         "legend": {
           "calcs": [
@@ -4104,9 +6728,9 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 136
+        "y": 193
       },
-      "id": 23,
+      "id": 95,
       "options": {
         "legend": {
           "calcs": [
@@ -4209,7 +6833,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 136
+        "y": 193
       },
       "id": 24,
       "options": {
@@ -4273,10 +6897,6 @@
   "templating": {
     "list": [
       {
-        "current": {
-          "text": "Prometheus",
-          "value": "prometheus"
-        },
         "includeAll": false,
         "label": "Data Source",
         "name": "DS_PROMETHEUS",
@@ -4288,10 +6908,6 @@
       },
       {
         "allValue": ".*",
-        "current": {
-          "text": "All",
-          "value": "$__all"
-        },
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
@@ -4309,6 +6925,189 @@
         "regex": "",
         "sort": 1,
         "type": "query"
+      },
+      {
+        "current": {
+          "text": "Enterprise",
+          "value": "agentgateway-proxy-.*"
+        },
+        "description": "For OSS Agentgateway, select 'OSS'. All selections must match to work properly. Default: Enterprise",
+        "label": "Proxy Deployment Naming Pattern",
+        "name": "proxy_pod_pattern",
+        "options": [
+          {
+            "text": "OSS",
+            "value": "agentgateway-proxy-.*"
+          },
+          {
+            "text": "Enterprise",
+            "value": "agentgateway-proxy-.*"
+          }
+        ],
+        "query": "OSS : agentgateway-proxy-.*,Enterprise : agentgateway-proxy-.*",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "Enterprise",
+          "value": "enterprise-agentgateway"
+        },
+        "description": "For OSS Agentgateway, select 'OSS'. All selections must match to work properly. Default: Enterprise",
+        "label": "Control Plane Deployment Naming Pattern",
+        "name": "control_plane_deployment",
+        "options": [
+          {
+            "text": "OSS",
+            "value": "agentgateway"
+          },
+          {
+            "text": "Enterprise",
+            "value": "enterprise-agentgateway"
+          }
+        ],
+        "query": "OSS : agentgateway,Enterprise : enterprise-agentgateway",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "Enterprise",
+          "value": ".*(enterprise-agentgateway|ext-auth|ext-cache|rate-limiter).*"
+        },
+        "description": "Filters out Enterprise add-on deployments for accurate control plane/proxy metrics. Must match your deployment type above. For OSS Agentgateway, select 'OSS'. All selections must match to work properly. Default: Enterprise",
+        "label": "Enterprise Add-on Exclusion Pattern",
+        "name": "deployment_exclusion",
+        "options": [
+          {
+            "text": "OSS",
+            "value": "agentgateway"
+          },
+          {
+            "text": "Enterprise",
+            "value": ".*(enterprise-agentgateway|ext-auth|ext-cache|rate-limiter).*"
+          }
+        ],
+        "query": "OSS : agentgateway,Enterprise : .*(enterprise-agentgateway|ext-auth|ext-cache|rate-limiter).*",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "2.50",
+          "value": "2.50"
+        },
+        "label": "mock-gpt-4o Input Price (per 1M tokens)",
+        "name": "gpt4o_input_price",
+        "query": "2.50",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "10.00",
+          "value": "10.00"
+        },
+        "label": "mock-gpt-4o Output Price (per 1M tokens)",
+        "name": "gpt4o_output_price",
+        "query": "10.00",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "1.75",
+          "value": "1.75"
+        },
+        "label": "mock-gpt-5-2 Input Price (per 1M tokens)",
+        "name": "gpt52_input_price",
+        "query": "1.75",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "14.00",
+          "value": "14.00"
+        },
+        "label": "mock-gpt-5-2 Output Price (per 1M tokens)",
+        "name": "gpt52_output_price",
+        "query": "14.00",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "0.15",
+          "value": "0.15"
+        },
+        "label": "gpt-4o-mini Input Price (per 1M tokens)",
+        "name": "gpt4omini_input_price",
+        "query": "0.15",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "0.60",
+          "value": "0.60"
+        },
+        "label": "gpt-4o-mini Output Price (per 1M tokens)",
+        "name": "gpt4omini_output_price",
+        "query": "0.60",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "1.00",
+          "value": "1.00"
+        },
+        "label": "claude-haiku-4-5 Input Price (per 1M tokens)",
+        "name": "claude_haiku_45_input_price",
+        "query": "1.00",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "5.00",
+          "value": "5.00"
+        },
+        "label": "claude-haiku-4-5 Output Price (per 1M tokens)",
+        "name": "claude_haiku_45_output_price",
+        "query": "5.00",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "0.80",
+          "value": "0.80"
+        },
+        "label": "claude-3-5-haiku Input Price (per 1M tokens)",
+        "name": "claude_35_haiku_input_price",
+        "query": "0.80",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "4.00",
+          "value": "4.00"
+        },
+        "label": "claude-3-5-haiku Output Price (per 1M tokens)",
+        "name": "claude_35_haiku_output_price",
+        "query": "4.00",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "3.00",
+          "value": "3.00"
+        },
+        "label": "claude-sonnet-4-5 Input Price (per 1M tokens)",
+        "name": "claude_sonnet_45_input_price",
+        "query": "3.00",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "15.00",
+          "value": "15.00"
+        },
+        "label": "claude-sonnet-4-5 Output Price (per 1M tokens)",
+        "name": "claude_sonnet_45_output_price",
+        "query": "15.00",
+        "type": "textbox"
       }
     ]
   },
@@ -4318,7 +7117,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "AgentGateway Overview",
-  "uid": "agentgateway-overview",
+  "title": "AgentGateway Dashboard",
+  "uid": "agentgateway-dashboard",
   "version": 1
 }
