@@ -27,6 +27,23 @@ gatewayClassParametersRefs:
     kind: EnterpriseAgentgatewayParameters
     name: agentgateway-params
     namespace: agentgateway-system
+tokenExchange:
+  enabled: true
+  issuer: "enterprise-agentgateway.agentgateway-system.svc.cluster.local:7777"
+  tokenExpiration: 24h
+  subjectValidator:
+    validatorType: remote
+    remoteConfig:
+      url: "https://demo-keycloak-907026730415.us-east4.run.app/realms/kagent-dev/protocol/openid-connect/certs"
+  actorValidator:
+    validatorType: k8s   
+  apiValidator:
+    validatorType: remote
+    remoteConfig:
+      url: "https://demo-keycloak-907026730415.us-east4.run.app/realms/kagent-dev/protocol/openid-connect/certs"
+controller:
+  extraEnv:
+    CALLBACK_URL: "http://localhost:4000/age/elicitations"       
 EOF
 
 
@@ -83,6 +100,7 @@ products:
     enabled: false
   agentgateway:
     enabled: true
+    namespace: agentgateway-system
   mesh:
     enabled: false
   agentregistry:

@@ -40,21 +40,6 @@ spec:
           policies:
             tls: {}  # Enable TLS for HTTPS backend (backendTLS equivalent)        
 ---
-# Policy for CORS, header modification, and backend TLS
-apiVersion: enterpriseagentgateway.solo.io/v1alpha1
-kind: EnterpriseAgentgatewayPolicy
-metadata:
-  name: databricks-elicitation-mcp-token-exchange-policy
-  namespace: agentgateway-system
-spec:
-  targetRefs:
-    - group: agentgateway.dev
-      kind: AgentgatewayBackend
-      name: databricks-elicitation-mcp-backend 
-      sectionName: databricks 
-  backend:
-    tokenExchange: {}  
----
 # Backend for Auth0 JWKS endpoint
 apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
@@ -66,20 +51,7 @@ spec:
     host: demo-keycloak-907026730415.us-east4.run.app
     port: 443
   policies:
-    tls: {}  # Enable TLS for auth0    
----
-# Backend for Auth0 JWKS endpoint
-apiVersion: agentgateway.dev/v1alpha1
-kind: AgentgatewayBackend
-metadata:
-  name: keycloak-elicitation-mcp-backend
-  namespace: agentgateway-system
-spec:
-  static:
-    host: demo-keycloak-907026730415.us-east4.run.app
-    port: 443
-  policies:
-    tls: {}  # Enable TLS for auth0        
+    tls: {}  # Enable TLS for auth0       
 ---
 # Policy for CORS, header modification, and backend TLS
 apiVersion: enterpriseagentgateway.solo.io/v1alpha1
@@ -136,3 +108,18 @@ spec:
           - x-forwarded-for
           - x-forwarded-host
           - x-forwarded-proto
+---
+apiVersion: enterpriseagentgateway.solo.io/v1alpha1
+kind: EnterpriseAgentgatewayPolicy
+metadata:
+  name: databricks-elicitation-mcp-exchange
+  namespace: agentgateway-system
+spec:
+  targetRefs:
+    - group: agentgateway.dev
+      kind: AgentgatewayBackend
+      name: databricks-elicitation-mcp-backend
+  backend:
+    tokenExchange:
+      elicitation:
+        secretName: databricks-token-exchange

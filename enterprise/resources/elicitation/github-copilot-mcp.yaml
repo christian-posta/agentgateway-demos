@@ -10,7 +10,7 @@ spec:
     - matches:
         - path:
             type: Exact
-            value: /github-copilot/mcp  
+            value: /github-copilot/mcp
         - path:
             type: Exact
             value: /.well-known/oauth-protected-resource/github-copilot/mcp  
@@ -40,20 +40,6 @@ spec:
           policies:
             tls: {}       
 ---
-# Policy for CORS, header modification, and backend TLS
-apiVersion: enterpriseagentgateway.solo.io/v1alpha1
-kind: EnterpriseAgentgatewayPolicy
-metadata:
-  name: github-copilot-mcp-token-exchange-policy
-  namespace: agentgateway-system
-spec:
-  targetRefs:
-    - group: agentgateway.dev
-      kind: AgentgatewayBackend
-      name: github-copilot-mcp-backend 
-  backend:
-    tokenExchange: {}  
----
 apiVersion: enterpriseagentgateway.solo.io/v1alpha1
 kind: EnterpriseAgentgatewayPolicy
 metadata:
@@ -79,3 +65,18 @@ spec:
           - x-forwarded-for
           - x-forwarded-host
           - x-forwarded-proto
+---
+apiVersion: enterpriseagentgateway.solo.io/v1alpha1
+kind: EnterpriseAgentgatewayPolicy
+metadata:
+  name: github-copilot-exchange
+  namespace: agentgateway-system
+spec:
+  targetRefs:
+    - group: agentgateway.dev
+      kind: AgentgatewayBackend
+      name: github-copilot
+  backend:
+    tokenExchange:
+      elicitation:
+        secretName: github-token-exchange
