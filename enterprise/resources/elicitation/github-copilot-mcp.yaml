@@ -38,7 +38,20 @@ spec:
           path: /mcp/
           protocol: StreamableHTTP  # Explicitly set protocol
           policies:
-            tls: {}       
+            tls: {}      
+---
+# Backend for Auth0 JWKS endpoint
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
+metadata:
+  name: keycloak-elicitation-mcp-backend
+  namespace: agentgateway-system
+spec:
+  static:
+    host: demo-keycloak-907026730415.us-east4.run.app
+    port: 443
+  policies:
+    tls: {}                  
 ---
 apiVersion: enterpriseagentgateway.solo.io/v1alpha1
 kind: EnterpriseAgentgatewayPolicy
@@ -50,6 +63,34 @@ spec:
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
       name: github-copilot-mcp
+  backend:
+    mcp:
+      authentication:
+        mode: Strict
+        issuer: https://demo-keycloak-907026730415.us-east4.run.app/realms/kagent-dev
+        audiences:
+          - account
+        jwks:
+          backendRef:
+            name: keycloak-elicitation-mcp-backend
+            kind: AgentgatewayBackend
+            group: agentgateway.dev
+          jwksPath: realms/kagent-dev/protocol/openid-connect/certs 
+        # provider: Auth0
+        resourceMetadata:
+          authorizationServers:
+            - https://ceposta-agw.ngrok.io/github-copilot/mcp
+          resource: https://ceposta-agw.ngrok.io/github-copilot/mcp
+          scopesSupported:
+            - profile
+            - openid
+            - offline_access
+          bearerMethodsSupported:
+            - header
+            - body
+            - query
+          resourceDocumentation: https://ceposta-agw.ngrok.io/github-copilot/mcp/docs
+          resourcePolicyUri: https://ceposta-agw.ngrok.io/github-copilot/mcp/policies     
   traffic:                           
     cors:
       allowOrigins:
@@ -75,7 +116,7 @@ spec:
   targetRefs:
     - group: agentgateway.dev
       kind: AgentgatewayBackend
-      name: github-copilot
+      name: github-copilot-mcp-backend
   backend:
     tokenExchange:
       elicitation:

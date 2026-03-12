@@ -51,7 +51,7 @@ spec:
     host: demo-keycloak-907026730415.us-east4.run.app
     port: 443
   policies:
-    tls: {}  # Enable TLS for auth0       
+    tls: {}     
 ---
 # Policy for CORS, header modification, and backend TLS
 apiVersion: enterpriseagentgateway.solo.io/v1alpha1
