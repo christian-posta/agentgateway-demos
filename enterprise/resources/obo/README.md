@@ -1,6 +1,12 @@
 We are going to deploy an AI agent that uses Google Gemini model: `gemini-2.5-flash-lite`
 
-This agent is programmed to take a user's access token, a Kubernetes service account token (ie, from `/var/run/secrets/kubernetes.io/serviceaccount/token` but is configurable in the Agent source code), and pass that to the Agentgateway STS (on port 7777 of the controller). This STS will evaluate the tokens, and decide based on policy whether the OBO relationships is allowed. At the moment, the only policy check is `may_act` on the User's access token. This must match the service account of the actor, e.g., `system:serviceaccount:default:agent-sa`. 
+This agent is programmed to take a user's access token, a Kubernetes service account token (ie, from `/var/run/secrets/kubernetes.io/serviceaccount/token` but is configurable in the Agent source code), and pass that to the Agentgateway STS (on port 7777 of the controller). 
+
+Said more clearly, AGW is providing the STS to combine agent and user identity.
+
+There is another mode where we have the AGW do the exchange, but this demo does not show that at the moment. 
+
+This STS will evaluate the tokens, and decide based on policy whether the OBO relationships is allowed. At the moment, the only policy check is `may_act` on the User's access token. This must match the service account of the actor, e.g., `system:serviceaccount:default:agent-sa`. 
 
 TODO: for the rest of the demo, we can now use the OBO token to check authorization. ie, "can agent foo call these tools on behalf of user John"
 
@@ -29,6 +35,8 @@ Deploy into default namespace.
 
 ```bash
 # this needs to be gemini api key
+cd enterprise
+source .env
 kubectl create secret generic google-credentials \
   --from-literal=api-key=${GEMINI_API_KEY}
 ```
@@ -54,6 +62,9 @@ You will need to add a protocol mapper to the default scope for the client. You'
 {"sub":"system:serviceaccount:default:agent-sa"}
 ```
 
+At the moment this demo is set up to use the public Keycloak, which doesn't have the right claim mappping. 
+
+This does work with my local keycloak. But then i have to change the subject validator of the whole demo, and I don't want to do that right now, since that's what works for elicitations. Right now, this OBO demo is going to purposefully stay in a broken state since I need to find a better way to secure/OIDC the UI and subjectValidator. 
 
 Port forward the agent-gateway (running on 8080) to local port 3000
 
