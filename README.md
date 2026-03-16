@@ -490,7 +490,7 @@ Failover is implemented on the openai route. Try calling a model that we will si
 First request will fail:
 
 ```bash
-curl http://localhost:3000/failover/openai/v1/chat/completions \
+curl -v http://localhost:3000/failover/openai/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-5",
