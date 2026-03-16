@@ -34,13 +34,13 @@ tokenExchange:
   subjectValidator:
     validatorType: remote
     remoteConfig:
-      url: "https://demo-keycloak-907026730415.us-east4.run.app/realms/kagent-dev/protocol/openid-connect/certs"
+      url: "https://ceposta-solo.auth0.com/.well-known/jwks.json"
   actorValidator:
     validatorType: k8s   
   apiValidator:
     validatorType: remote
     remoteConfig:
-      url: "https://demo-keycloak-907026730415.us-east4.run.app/realms/kagent-dev/protocol/openid-connect/certs"
+      url: "https://ceposta-solo.auth0.com/.well-known/jwks.json"
 controller:
   extraEnv:
     CALLBACK_URL: "http://localhost:4000/age/elicitations"       
@@ -61,11 +61,10 @@ kubectl apply -f ./resources/supporting/failover-429.yaml
 
 
 # Install AgentGateway UI which helps surface the elicitaitons
-export KEYCLOAK_IP=34.23.181.61
-export OIDC_BACKEND=kagent-backend
-export OIDC_FRONTEND=kagent-ui
-export BACKEND_CLIENT_SECRET=$KEYCLOAK_BACKEND_CLIENT_SECRET
-export OIDC_ISSUER=https://demo-keycloak-907026730415.us-east4.run.app/realms/kagent-dev
+export OIDC_BACKEND=IwGCb89vj2iK12ja8bpZN9u4NIrKjpLZ
+export OIDC_FRONTEND=D8wCng8JIZFZM8zY6wJGDRcjjs7VBivh
+export BACKEND_CLIENT_SECRET=$AUTH0_CLIENT_ID
+export OIDC_ISSUER=https://ceposta-solo.auth0.com/
 
 export KAGENT_ENT_VERSION=0.3.9
 export KAGENT_MGMT_CHART=oci://us-docker.pkg.dev/solo-public/solo-enterprise-helm/charts/management
@@ -84,11 +83,11 @@ oidc:
 
 rbac:
   roleMapping:
-    roleMapper: "claims.Groups.transformList(i, v, v in rolesMap, rolesMap[v])"
+    roleMapper: "claims.permissions.transformList(i, v, v in rolesMap, rolesMap[v])"
     roleMappings:
-      admins: "global.Admin"
-      readers: "global.Reader"
-      writers: "global.Writer"
+      "role:admin": "global.Admin"
+      "role:reader": "global.Reader"
+      "role:writer": "global.Writer"
 
 service:
   type: LoadBalancer

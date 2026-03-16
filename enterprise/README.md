@@ -40,9 +40,9 @@ Elicitations can be demo'd by setting up the following:
 ```bash
 ./setup-elicitation.sh
 ```
-This sets up the routes, secrets, and mcp configs. The MCP Auth is tied to the public keycloak we also use for the UI. 
+This sets up the routes, secrets, and mcp configs. The MCP Auth is tied to Auth0 (`ceposta-solo.auth0.com`).
 
-To demo this, you will want to use the `kagent-ui` client id since that Keycloak doesn't support DCR.
+To demo this, you can use the hardcoded client ID for mcp-inspector: `0x1gCuvq2XeMG8yUmnCna4JJiPpv82ID`
 
 
 Perform necessary port forwards to access the UI and backend
@@ -51,24 +51,22 @@ kubectl port-forward service/solo-enterprise-ui -n kagent  4000:80
 kubectl port-forward deployments/agentgateway-enterprise -n agentgateway-system 3000:8080 
 ```
 
-If you want to manually call a route, you can use this helper to get a token:
+If you want to manually call a route, use `get-auth0-token.sh` to obtain a token:
 
 ```bash
-export TOKEN=$(curl -k -X POST "https://demo-keycloak-907026730415.us-east4.run.app/realms/kagent-dev/protocol/openid-connect/token" \
--d "client_id=kagent-ui" \
--d "username=admin" \
--d 'password=$KEYCLOAK_USER_PASSWORD' \
--d "grant_type=password" | jq -r .access_token)
+./get-auth0-token.sh
 ```
 
+Set `SCOPE` and ensure the script's `AUDIENCE` matches the elicitation route (e.g. `https://ceposta-agw.ngrok.io/mcp`).
 
-Best way to demo this is with MCP inspector or VS Code. Use the `kagent-ui` client id. 
 
-Go to the `https://ceposta-agw.ngrok.io/github-copilot/mcp` or the databricks: `https://ceposta-agw.ngrok.io/github-copilot/mcp`
+Best way to demo this is with MCP Inspector or VS Code. Use client ID `0x1gCuvq2XeMG8yUmnCna4JJiPpv82ID` for mcp-inspector.
 
-It will prompt you to login through Keyclaok (representing SSO). 
+Go to `https://ceposta-agw.ngrok.io/github-copilot/mcp` or `https://ceposta-agw.ngrok.io/databricks/mcp`
 
-Once successfully auth'd youd still get an error message telling you to go to the Agentgateway UI. 
+It will prompt you to login through Auth0 (representing SSO). 
+
+Once successfully auth'd you'll still get an error message telling you to go to the Agentgateway UI. 
 
 
 There you should see elicitations to complete. 
@@ -78,14 +76,10 @@ There you should see elicitations to complete.
 
 If you want to manually test databricks for example:
 
-Can test with this:
+Can test with this (get a token first via `./get-auth0-token.sh` with `AUDIENCE=https://ceposta-agw.ngrok.io/mcp`):
 
 ```bash
-export TOKEN=$(curl -k -X POST "https://demo-keycloak-907026730415.us-east4.run.app/realms/kagent-dev/protocol/openid-connect/token" \
--d "client_id=kagent-ui" \
--d "username=admin" \
--d 'password=$KEYCLOAK_USER_PASSWORD' \
--d "grant_type=password" | jq -r .access_token)
+export TOKEN=$(./get-auth0-token.sh)
 
 curl -X POST localhost:3000/databricks/mcp \
   -H "Authorization: Bearer $TOKEN" \
@@ -97,11 +91,7 @@ curl -X POST localhost:3000/databricks/mcp \
 ### Testing GitHub CoPilot
 
 ```bash
-export TOKEN=$(curl -k -X POST "https://demo-keycloak-907026730415.us-east4.run.app/realms/kagent-dev/protocol/openid-connect/token" \
--d "client_id=kagent-ui" \
--d "username=admin" \
--d 'password=$KEYCLOAK_USER_PASSWORD' \
--d "grant_type=password" | jq -r .access_token)
+export TOKEN=$(./get-auth0-token.sh)
 
 curl -X POST localhost:3000/github-copilot/mcp \
   -H "Authorization: Bearer $TOKEN" \
@@ -110,7 +100,7 @@ curl -X POST localhost:3000/github-copilot/mcp \
   -d '{"jsonrpc":"2.0","method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}},"id":1}'
 ```
 
-Or with mcp-inspector:
+Or with MCP Inspector (use client ID `0x1gCuvq2XeMG8yUmnCna4JJiPpv82ID` when prompted):
 
 ```bash
 npx @modelcontextprotocol/inspector@0.18.0 --header "Authorization: Bearer $TOKEN" --cli http://localhost:3000/github-copilot/mcp --transport http --method tools/list

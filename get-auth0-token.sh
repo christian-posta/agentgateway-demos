@@ -2,11 +2,16 @@
 
 # Script to get an access token from Auth0 using Device Code Flow
 # This is the recommended flow for CLI tools and headless environments
+#
+# Usage: ./get-auth0-token.sh [--show-curl]
+#   --show-curl  Pretty-print request params and show the curl equivalent for each request
+#   AUDIENCE     Optional env var (default: https://ceposta-agw.ngrok.io/mcp)
+#   SCOPE        Optional env var (default: openid profile email)
 
 # Configuration
 AUTH0_DOMAIN="ceposta-solo.auth0.com"
 CLIENT_ID="qJkccsQPnBhg2DNoaJ4k9SRFSBud9TKf"
-AUDIENCE="https://ceposta-agw.ngrok.io/mcp"
+AUDIENCE="${AUDIENCE:-https://ceposta-agw.ngrok.io/mcp}"
 SCOPE="${SCOPE:-openid profile email}"
 
 # Source script.env if it exists (for AUTH0_CLI_CLIENT_SECRET)
@@ -14,11 +19,29 @@ if [ -f "$(dirname "$0")/script.env" ]; then
   source "$(dirname "$0")/script.env"
 fi
 
+# Check for --show-curl flag
+[[ " $* " =~ " --show-curl " ]] && SHOW_CURL=1
+
 # Device Code endpoint
 DEVICE_CODE_URL="https://${AUTH0_DOMAIN}/oauth/device/code"
 TOKEN_URL="https://${AUTH0_DOMAIN}/oauth/token"
 
 # Step 1: Request device code
+if [ -n "$SHOW_CURL" ]; then
+  echo "--- Request 1: Device Code ---"
+  echo "Params:"
+  echo "  client_id:  ${CLIENT_ID}"
+  echo "  scope:      ${SCOPE}"
+  echo "  audience:   ${AUDIENCE}"
+  echo ""
+  echo "curl equivalent:"
+  echo "curl -X POST \"${DEVICE_CODE_URL}\" \\"
+  echo "  -H \"Content-Type: application/x-www-form-urlencoded\" \\"
+  echo "  -d \"client_id=${CLIENT_ID}\" \\"
+  echo "  -d \"scope=${SCOPE}\" \\"
+  echo "  -d \"audience=${AUDIENCE}\""
+  echo ""
+fi
 echo "Requesting device code from Auth0..."
 DEVICE_RESPONSE=$(curl -s -X POST "${DEVICE_CODE_URL}" \
   -H "Content-Type: application/x-www-form-urlencoded" \
@@ -69,6 +92,25 @@ echo "This request will expire in ${EXPIRES_IN} seconds."
 echo ""
 
 # Step 3: Poll for token
+if [ -n "$SHOW_CURL" ]; then
+  echo "--- Request 2: Token Exchange ---"
+  echo "Params:"
+  echo "  grant_type:  urn:ietf:params:oauth:grant-type:device_code"
+  echo "  device_code: ${DEVICE_CODE}"
+  echo "  client_id:   ${CLIENT_ID}"
+  [ -n "$AUTH0_CLI_CLIENT_SECRET" ] && echo "  client_secret: ***"
+  echo ""
+  TOKEN_CURL="curl -X POST \"${TOKEN_URL}\" \\
+  -H \"Content-Type: application/x-www-form-urlencoded\" \\
+  -d \"grant_type=urn:ietf:params:oauth:grant-type:device_code\" \\
+  -d \"device_code=${DEVICE_CODE}\" \\
+  -d \"client_id=${CLIENT_ID}\""
+  [ -n "$AUTH0_CLI_CLIENT_SECRET" ] && TOKEN_CURL="${TOKEN_CURL} \\
+  -d \"client_secret=***\""
+  echo "curl equivalent:"
+  echo "$TOKEN_CURL"
+  echo ""
+fi
 ELAPSED=0
 while [ $ELAPSED -lt $EXPIRES_IN ]; do
   sleep $INTERVAL

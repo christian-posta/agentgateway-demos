@@ -44,14 +44,14 @@ spec:
 apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
-  name: keycloak-elicitation-mcp-backend
+  name: auth0-elicitation-jwks
   namespace: agentgateway-system
 spec:
   static:
-    host: demo-keycloak-907026730415.us-east4.run.app
+    host: ceposta-solo.auth0.com
     port: 443
   policies:
-    tls: {}                  
+    tls: {}
 ---
 apiVersion: enterpriseagentgateway.solo.io/v1alpha1
 kind: EnterpriseAgentgatewayPolicy
@@ -67,16 +67,16 @@ spec:
     mcp:
       authentication:
         mode: Strict
-        issuer: https://demo-keycloak-907026730415.us-east4.run.app/realms/kagent-dev
+        issuer: https://ceposta-solo.auth0.com/
         audiences:
-          - account
+          - https://ceposta-agw.ngrok.io/mcp
         jwks:
           backendRef:
-            name: keycloak-elicitation-mcp-backend
+            name: auth0-elicitation-jwks
             kind: AgentgatewayBackend
             group: agentgateway.dev
-          jwksPath: realms/kagent-dev/protocol/openid-connect/certs 
-        # provider: Auth0
+          jwksPath: .well-known/jwks.json
+        provider: Auth0
         resourceMetadata:
           authorizationServers:
             - https://ceposta-agw.ngrok.io/github-copilot/mcp
