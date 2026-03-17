@@ -70,7 +70,7 @@ This will:
 1. Create a kind cluster named **agw-msft-obo** (unless `CREATE_KIND_CLUSTER=0`).
 2. Create namespace `agentgateway-system`.
 3. Install Gateway API (v1.5.0) and Enterprise Agentgateway CRDs + controller with **Entra OBO** token exchange (validators pointing to Entra JWKS; no elicitation).
-4. Create the Entra client secret and apply gateway params, gateway, route, backends (including JWKS + demo echo), and JWT + OBO policies.
+4. Create the Entra client secret and apply gateway params, gateway, route, backends (including JWKS + demo httpbin), and JWT + OBO policies.
 
 To use an **existing cluster** and skip kind:
 
@@ -87,8 +87,8 @@ CREATE_KIND_CLUSTER=0 ./setup-msft-obo.sh
   - `tokenExchange.enabled: true`, issuer and validators (subject/api → Entra JWKS URL), actor validator k8s, no elicitation secret.
 - **Parameters** — `EnterpriseAgentgatewayParameters` `**agentgateway-params-msft-obo`** (dedicated name to avoid overwriting the shared `agentgateway-params` used by `setup-gateway.sh` and `resources/obo/`) with `STS_URI` = `.../oauth2/token` and `STS_AUTH_TOKEN`.
 - **Gateway** — `token-exchange-gateway` with params ref, listener 8080.
-- **Backends** — `entra-jwks` (login.microsoftonline.com:443) and `obo-demo-backend` (in-cluster echo service).
-- **HTTPRoute** — path prefix `**/msft-obo`** → `obo-demo-backend` (path chosen to avoid collision with `resources/obo/` which uses `/obo` and `/obo/agent`).
+- **Backends** — `entra-jwks` (login.microsoftonline.com:443) and `obo-demo-backend` (in-cluster httpbin).
+- **HTTPRoute** — path prefix `**/**` → `obo-demo-backend` (all paths route to httpbin; no path prefix).
 - **Policies** — JWT auth (Entra issuer/audience, JWKS via `entra-jwks`) and Entra OBO token exchange on `obo-demo-backend`.
 
 ---
@@ -97,14 +97,20 @@ CREATE_KIND_CLUSTER=0 ./setup-msft-obo.sh
 
 ### 1. Obtain a user token (middle-tier audience)
 
-Get an access token for your **middle-tier** app, e.g.:
+Log in and get an access token for your **middle-tier** app:
 
 ```bash
-# Example: resource = api://<middle-tier-client-id>
-az account get-access-token --resource api://ec791040-80f8-4129-bf34-96a0e0672c96
+# Log in (resource = api://<middle-tier-client-id>)
+az login --tenant "5e7d8166-7876-4755-a1a4-b476d4a344f6" --scope "api://ec791040-80f8-4129-bf34-96a0e0672c96/.default"
+
+# Get token and set USER_TOKEN
+export USER_TOKEN=$(az account get-access-token \
+  --tenant "5e7d8166-7876-4755-a1a4-b476d4a344f6" \
+  --resource "api://ec791040-80f8-4129-bf34-96a0e0672c96" \
+  --query accessToken -o tsv)
 ```
 
-Or use MSAL / an app that signs in the user and requests a token with scope for the middle-tier API. The token’s `aud` should match the middle-tier app (e.g. `api://ec791040-80f8-4129-bf34-96a0e0672c96`).
+Alternatively use MSAL / an app that signs in the user and requests a token with scope for the middle-tier API. The token’s `aud` should match the middle-tier app (e.g. `api://ec791040-80f8-4129-bf34-96a0e0672c96`).
 
 ### 2. Port-forward and call the gateway
 
@@ -113,13 +119,13 @@ Or use MSAL / an app that signs in the user and requests a token with scope for 
 AGW=$(kubectl -n agentgateway-system get pods -l gateway.networking.k8s.io/gateway-name=token-exchange-gateway -o jsonpath='{.items[0].metadata.name}')
 kubectl -n agentgateway-system port-forward "$AGW" 8080:8080
 
-export GATEWAY_URL="http://localhost:3000/msft-obo"
-export USER_TOKEN="<paste-user-access-token>"
+export GATEWAY_URL="http://localhost:8080"
 
-curl -i -H "Authorization: Bearer $USER_TOKEN" "$GATEWAY_URL"
+# httpbin: use /headers to see request headers (including the exchanged Authorization token)
+curl -i -H "Authorization: Bearer $USER_TOKEN" "$GATEWAY_URL/headers"
 ```
 
-- **200** and response body (e.g. "obo-demo"): JWT validation and OBO succeeded; backend received the exchanged token.
+- **200** and JSON with request headers (e.g. `"Authorization": "Bearer <exchanged-token>"`): JWT validation and OBO succeeded; backend received the exchanged token.
 - **401**: Check token validity, issuer (`https://sts.windows.net/{tenant}/`), audience (middle-tier app), and that the JWKS backend can reach `login.microsoftonline.com`.
 - **4xx from STS**: Check controller logs for token exchange errors; ensure token `aud` matches policy `clientId` and middle-tier app has consent for the downstream `scope`.
 
@@ -133,7 +139,7 @@ For Entra OBO, the backend receives a token from Entra for the requested `scope`
 
 1. Client calls gateway with `Authorization: Bearer <user-entra-token>` (token for middle-tier API).
 2. JWT policy validates the token with Entra JWKS (issuer `https://sts.windows.net/{tenant}/`, audience = middle-tier app).
-3. Proxy forwards to backend; token exchange is triggered for the backend’s resource key (`agentgateway-system/obo-demo-backend`). Request path is `/msft-obo`.
+3. Proxy forwards to backend; token exchange is triggered for the backend’s resource key (`agentgateway-system/obo-demo-backend`). Request path is forwarded as-is (no path prefix).
 4. Proxy POSTs to STS `/oauth2/token` with `subject_token=<user-entra-token>` and `resource=agentgateway-system/obo-demo-backend`.
 5. STS finds the Entra provider for that resource, validates `subject_token`, then calls Entra OBO and gets a token for `scope` (downstream API).
 6. STS returns that token to the proxy; proxy sends the request to the backend with `Authorization: Bearer <exchanged-token>`.
@@ -189,11 +195,11 @@ This guide is intended for a **dedicated cluster** (e.g. kind `agw-msft-obo`) fo
 | -------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | **Gateway**    | `agentgateway` (from setup/gateway.yaml)                       | `token-exchange-gateway`                                                         |
 | **Parameters** | Uses shared `agentgateway-params` (from setup/supporting.yaml) | `**agentgateway-params-msft-obo`** (dedicated; does not overwrite shared params) |
-| **Path**       | `/obo`, `/obo/agent`                                           | `**/msft-obo`**                                                                  |
+| **Path**       | `/obo`, `/obo/agent`                                           | **/** (all paths)                                                                |
 | **Backends**   | Services `demo-agent-ui`, `agent-obo` (default ns)             | `obo-demo-backend`, `entra-jwks` (agentgateway-system)                           |
 
 
-You can run both demos in the same cluster: the Keycloak OBO UI and agent use the main `agentgateway` and path `/obo`; the Entra OBO demo uses `token-exchange-gateway` and path `/msft-obo`. Port-forward to the appropriate gateway pod depending on which you are testing.
+You can run both demos in the same cluster: the Keycloak OBO UI and agent use the main `agentgateway` and path `/obo`; the Entra OBO demo uses `token-exchange-gateway` with no path prefix (all paths to httpbin). Port-forward to the appropriate gateway pod depending on which you are testing.
 
 ---
 
@@ -204,7 +210,7 @@ If you prefer to run steps by hand:
 1. Create cluster: `kind create cluster --name agw-msft-obo`
 2. In `enterprise/`: `source .env`, then create namespace, apply Gateway API, install CRDs and controller with Entra OBO Helm values (see `setup-msft-obo.sh`).
 3. Create secret: `kubectl create secret generic entra-obo-client-secret -n agentgateway-system --from-literal=client_secret="$ENTRA_OBO_CLIENT_SECRET"`
-4. Apply manifests in order: `gateway-params.yaml` (creates `agentgateway-params-msft-obo`), `entra-jwks-backend.yaml`, `gateway-and-route.yaml`. For `jwt-auth-policy.yaml` and `entra-obo-policy.yaml`, substitute `ENTRA_TENANT_ID`, `ENTRA_MIDDLETIER_CLIENT_ID`, `ENTRA_DOWNSTREAM_SCOPE` (e.g. `envsubst < jwt-auth-policy.yaml | kubectl apply -f -`). Use path `**/msft-obo`** when testing (not `/obo`, which is used by `resources/obo/`).
+4. Apply manifests in order: `gateway-params.yaml` (creates `agentgateway-params-msft-obo`), `entra-jwks-backend.yaml`, `gateway-and-route.yaml`. For `jwt-auth-policy.yaml` and `entra-obo-policy.yaml`, substitute `ENTRA_TENANT_ID`, `ENTRA_MIDDLETIER_CLIENT_ID`, `ENTRA_DOWNSTREAM_SCOPE` (e.g. `envsubst < jwt-auth-policy.yaml | kubectl apply -f -`). Use the gateway root when testing (e.g. `$GATEWAY_URL/headers`; not `/obo`, which is used by `resources/obo/`).
 
 ---
 

@@ -1,4 +1,4 @@
-# Gateway with msft-obo params ref. Path /msft-obo avoids collision with resources/obo/ which uses /obo and /obo/agent.
+# Gateway with msft-obo params ref.
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
@@ -14,7 +14,7 @@ spec:
         namespaces:
           from: Same
 ---
-# Demo backend: simple echo service so you can verify the request (and exchanged token) without an MCP server.
+# Demo backend: httpbin so you can verify the request (and exchanged token) without an MCP server.
 apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
@@ -22,8 +22,8 @@ metadata:
   namespace: agentgateway-system
 spec:
   static:
-    host: obo-echo.agentgateway-system.svc.cluster.local
-    port: 8080
+    host: httpbin.agentgateway-system.svc.cluster.local
+    port: 8000
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -37,47 +37,57 @@ spec:
     - matches:
         - path:
             type: PathPrefix
-            value: /msft-obo
+            value: /
       backendRefs:
         - name: obo-demo-backend
           group: agentgateway.dev
           kind: AgentgatewayBackend
 ---
-# Minimal echo server for demo (returns request info so you can verify headers).
+# httpbin for demo (e.g. GET /headers to verify request headers and exchanged token).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: httpbin
+  namespace: agentgateway-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  namespace: agentgateway-system
+  labels:
+    app: httpbin
+    service: httpbin
+spec:
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8080
+  selector:
+    app: httpbin
+  type: ClusterIP
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: obo-echo
+  name: httpbin
   namespace: agentgateway-system
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: obo-echo
+      app: httpbin
+      version: v1
   template:
     metadata:
       labels:
-        app: obo-echo
+        app: httpbin
+        version: v1
     spec:
+      serviceAccountName: httpbin
       containers:
-        - name: echo
-          image: hashicorp/http-echo:0.2.3
-          args:
-            - "-text=obo-demo"
-            - "-listen=:8080"
+        - image: docker.io/mccutchen/go-httpbin:v2.15.0
+          imagePullPolicy: IfNotPresent
+          name: httpbin
           ports:
             - containerPort: 8080
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: obo-echo
-  namespace: agentgateway-system
-spec:
-  selector:
-    app: obo-echo
-  ports:
-    - port: 8080
-      targetPort: 8080
-      protocol: TCP
-  type: ClusterIP
