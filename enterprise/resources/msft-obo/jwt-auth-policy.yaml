@@ -1,0 +1,27 @@
+# Require and validate the user's Entra token (middle-tier audience) using Entra JWKS.
+# Replace ENTRA_TENANT_ID and ENTRA_MIDDLETIER_CLIENT_ID (or set env and use envsubst).
+apiVersion: enterpriseagentgateway.solo.io/v1alpha1
+kind: EnterpriseAgentgatewayPolicy
+metadata:
+  name: jwt-secure-obo-policy
+  namespace: agentgateway-system
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: jwt-secure-obo
+  traffic:
+    jwtAuthentication:
+      mode: Strict
+      providers:
+        - issuer: https://sts.windows.net/${ENTRA_TENANT_ID}/
+          audiences:
+            - "api://${ENTRA_MIDDLETIER_CLIENT_ID}"
+          jwks:
+            remote:
+              jwksPath: /${ENTRA_TENANT_ID}/discovery/v2.0/keys
+              backendRef:
+                name: entra-jwks
+                kind: AgentgatewayBackend
+                group: agentgateway.dev
+                port: 443

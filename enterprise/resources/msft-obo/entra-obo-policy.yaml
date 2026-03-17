@@ -1,0 +1,23 @@
+# Entra OBO token exchange: backend receives exchanged token for downstream API.
+# Replace ENTRA_TENANT_ID, ENTRA_MIDDLETIER_CLIENT_ID, ENTRA_DOWNSTREAM_SCOPE (or set env and use envsubst).
+# Secret entra-obo-client-secret must exist (see README / setup script).
+apiVersion: enterpriseagentgateway.solo.io/v1alpha1
+kind: EnterpriseAgentgatewayPolicy
+metadata:
+  name: obo-demo-entra-obo
+  namespace: agentgateway-system
+spec:
+  targetRefs:
+    - group: agentgateway.dev
+      kind: AgentgatewayBackend
+      name: obo-demo-backend
+  backend:
+    tokenExchange:
+      mode: ExchangeOnly
+      entra:
+        tenantId: "${ENTRA_TENANT_ID}"
+        clientId: "${ENTRA_MIDDLETIER_CLIENT_ID}"
+        scope: "${ENTRA_DOWNSTREAM_SCOPE}"
+        clientSecretRef:
+          name: entra-obo-client-secret
+          key: client_secret

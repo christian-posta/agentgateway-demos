@@ -1,0 +1,12 @@
+# Backend for Entra JWKS (login.microsoftonline.com). Used by JWT auth policy.
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
+metadata:
+  name: entra-jwks
+  namespace: agentgateway-system
+spec:
+  static:
+    host: login.microsoftonline.com
+    port: 443
+  policies:
+    tls: {}

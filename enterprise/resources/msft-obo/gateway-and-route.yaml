@@ -1,0 +1,83 @@
+# Gateway with msft-obo params ref. Path /msft-obo avoids collision with resources/obo/ which uses /obo and /obo/agent.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: token-exchange-gateway
+  namespace: agentgateway-system
+spec:
+  gatewayClassName: enterprise-agentgateway
+  listeners:
+    - name: http
+      port: 8080
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+# Demo backend: simple echo service so you can verify the request (and exchanged token) without an MCP server.
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
+metadata:
+  name: obo-demo-backend
+  namespace: agentgateway-system
+spec:
+  static:
+    host: obo-echo.agentgateway-system.svc.cluster.local
+    port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: jwt-secure-obo
+  namespace: agentgateway-system
+spec:
+  parentRefs:
+    - name: token-exchange-gateway
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /msft-obo
+      backendRefs:
+        - name: obo-demo-backend
+          group: agentgateway.dev
+          kind: AgentgatewayBackend
+---
+# Minimal echo server for demo (returns request info so you can verify headers).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: obo-echo
+  namespace: agentgateway-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: obo-echo
+  template:
+    metadata:
+      labels:
+        app: obo-echo
+    spec:
+      containers:
+        - name: echo
+          image: hashicorp/http-echo:0.2.3
+          args:
+            - "-text=obo-demo"
+            - "-listen=:8080"
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: obo-echo
+  namespace: agentgateway-system
+spec:
+  selector:
+    app: obo-echo
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+  type: ClusterIP

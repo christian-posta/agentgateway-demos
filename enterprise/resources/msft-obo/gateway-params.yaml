@@ -1,0 +1,16 @@
+# STS URL for token exchange. Path must be /oauth2/token (not /oauth2/token/exchange).
+# Uses a dedicated params name (agentgateway-params-msft-obo) to avoid overwriting the
+# shared agentgateway-params used by setup-gateway.sh and enterprise/resources/obo/.
+apiVersion: enterpriseagentgateway.solo.io/v1alpha1
+kind: EnterpriseAgentgatewayParameters
+metadata:
+  name: agentgateway-params
+  namespace: agentgateway-system
+spec:
+  env:
+    - name: STS_URI
+      value: http://enterprise-agentgateway.agentgateway-system.svc.cluster.local:7777/oauth2/token
+    - name: STS_AUTH_TOKEN
+      value: ./var/run/secrets/xds-tokens/xds-token
+  logging:
+    level: info
