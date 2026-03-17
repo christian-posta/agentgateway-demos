@@ -136,6 +136,37 @@ while [ $ELAPSED -lt $EXPIRES_IN ]; do
       echo ""
       echo "✓ Authorization successful!"
       echo ""
+
+      # Decode and pretty-print JWT (header + payload) first
+      jwt_decode_and_pretty_print() {
+        local token="$1"
+        local part num
+        for part in header payload; do
+          if [ "$part" = "header" ]; then num=1; else num=2; fi
+          local b64=$(echo "$token" | cut -d. -f"$num")
+          [ -z "$b64" ] && continue
+          # base64url -> base64 (sed avoids macOS tr issues with - and _), add padding
+          b64=$(echo "$b64" | sed 's/-/+/g; s/_/\//g')
+          local len=${#b64}
+          local rem=$((len % 4))
+          [ "$rem" -eq 2 ] && b64="${b64}=="
+          [ "$rem" -eq 3 ] && b64="${b64}="
+          local decoded
+          decoded=$(echo "$b64" | base64 -d 2>/dev/null) || decoded=$(echo "$b64" | base64 -D 2>/dev/null)
+          if [ -n "$decoded" ]; then
+            echo "--- JWT $part ---"
+            if command -v jq >/dev/null 2>&1; then
+              echo "$decoded" | jq '.' 2>/dev/null || echo "$decoded"
+            else
+              echo "$decoded"
+            fi
+            echo ""
+          fi
+        done
+      }
+      jwt_decode_and_pretty_print "$TOKEN"
+
+      echo "--- Raw token ---"
       echo "$TOKEN"
       exit 0
     fi
