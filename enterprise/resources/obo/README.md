@@ -10,24 +10,26 @@ This STS will evaluate the tokens, and decide based on policy whether the OBO re
 
 TODO: for the rest of the demo, we can now use the OBO token to check authorization. ie, "can agent foo call these tools on behalf of user John"
 
-Agentgateway token exchange settings needs to trust the same identity provider as being used in the Agent UI:
+Agentgateway token exchange settings must trust the same identity provider as the Agent UI. This demo uses **local Keycloak** at `http://localhost:8080`, realm **mcp-realm**. From inside the cluster (e.g. Kind), the controller reaches Keycloak via `host.docker.internal:8080`.
 
 ```json
 tokenExchange:
   enabled: true
   issuer: "enterprise-agentgateway.agentgateway-system.svc.cluster.local:7777"
   tokenExpiration: 24h
-  oidc:
-    secretName: "elicitation-oidc"
   subjectValidator:
     validatorType: remote
     remoteConfig:
-      url: "https://demo-keycloak-907026730415.us-east4.run.app/realms/kagent-dev/protocol/openid-connect/certs"
+      url: "http://host.docker.internal:8080/realms/mcp-realm/protocol/openid-connect/certs"
+  apiValidator:
+    validatorType: remote
+    remoteConfig:
+      url: "http://host.docker.internal:8080/realms/mcp-realm/protocol/openid-connect/certs"
   actorValidator:
     validatorType: k8s
 ```
 
-For my demo, I set this same thing up for elicitations also. See `setup-elicitation.sh`
+`setup-obo.sh` sets this automatically; override with `KEYCLOAK_JWKS_URL` if your Keycloak is elsewhere.
 
 ## Set up
 
@@ -50,21 +52,19 @@ kubectl apply -f resources/obo/httproute.yaml
 ```
 
 
-Note, you'll need a public keycloak client if you're setting this up yourself in your own keycloak/IdP:
+This demo uses **local Keycloak** at `http://localhost:8080`, realm **mcp-realm**. Configure a client in that realm:
 
-name; kagent-ui
-redirect: http://localhost:3000/callback
-web_origin: http://localhost:3000/
+- **Client ID:** `kagent-ui`
+- **Redirect URI:** `http://localhost:3000/callback`
+- **Web origin:** `http://localhost:3000/`
 
-You will need to add a protocol mapper to the default scope for the client. You'll need to add a "Hardcoded Claim" of type JSON with value:
+Add a protocol mapper to the client's default scope: a **Hardcoded Claim** of type JSON with value:
 
 ```json
 {"sub":"system:serviceaccount:default:agent-sa"}
 ```
 
-At the moment this demo is set up to use the public Keycloak, which doesn't have the right claim mappping. 
-
-This does work with my local keycloak. But then i have to change the subject validator of the whole demo, and I don't want to do that right now, since that's what works for elicitations. Right now, this OBO demo is going to purposefully stay in a broken state since I need to find a better way to secure/OIDC the UI and subjectValidator. 
+This populates the `may_act` claim so the AgentGateway STS can validate the OBO relationship. 
 
 Port forward the agent-gateway (running on 8080) to local port 3000
 
@@ -76,7 +76,7 @@ http://localhost:3000/obo
 
 You'll need to login to the agent UI with user. 
 
-User's access token that gets exchanged:
+User's access token that gets exchanged (note the may_act claim):
 
 ```json
 {

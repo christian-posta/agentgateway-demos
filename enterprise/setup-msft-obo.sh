@@ -24,7 +24,7 @@ done
 
 # --- 1. Kind cluster (optional) ---
 if [[ "$CREATE_KIND_CLUSTER" == "1" ]]; then
-  if kind get cluster --name agw-msft-obo &>/dev/null; then
+  if kind get clusters | grep -q '^agw-msft-obo$'; then
     echo "Kind cluster agw-msft-obo already exists; skipping create."
   else
     echo "Creating kind cluster agw-msft-obo..."
