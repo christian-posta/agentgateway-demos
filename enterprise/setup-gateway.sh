@@ -90,7 +90,7 @@ rbac:
       "role:writer": "global.Writer"
 
 service:
-  type: LoadBalancer
+  type: ClusterIP
   clusterIP: ""
 
 # --- Enable Solo UI for AgentGateway (required) ---

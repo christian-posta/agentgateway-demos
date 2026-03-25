@@ -30,7 +30,7 @@ spec:
       annotations:
         service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
     spec:
-      type: LoadBalancer
+      type: ClusterIP
   #--- Use rawConfig to inline custom configuration from ConfigMap ---
   rawConfig:
     config:
