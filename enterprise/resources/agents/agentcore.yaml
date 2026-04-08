@@ -1,0 +1,33 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: supply-chain-route
+  namespace: agentgateway-system
+spec:
+  parentRefs:
+    - name: agentgateway
+      namespace: agentgateway-system
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /agents/supply-chain-agent
+    backendRefs:
+    - group: agentgateway.dev
+      kind: AgentgatewayBackend
+      name: supply-chain-agent
+---
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
+metadata:
+  name: supply-chain-agent
+  namespace: agentgateway-system
+spec:
+  aws:
+    agentCore:
+      agentRuntimeArn: "arn:aws:bedrock-agentcore:us-west-2:606469916935:runtime/a2a_supply_chain_agent-CV8obwHtr5"
+  policies:
+    auth:
+      aws:
+        secretRef:
+          name: bedrock-secret      
