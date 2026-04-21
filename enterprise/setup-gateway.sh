@@ -1,6 +1,9 @@
-# pick up local env variables
+# pick up local env variables (chart version last — see version.env)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
 set -a
 source .env
+source version.env
 set +a
 
 # Create namespace

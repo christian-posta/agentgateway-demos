@@ -38,13 +38,13 @@ This guide configures Enterprise Agentgateway to perform **Microsoft Entra ID On
   - Middle-tier app has a **client secret** and is configured for OBO (API permissions for the downstream API, e.g. `api://<downstream-app-id>/.default`).
   - Optional: [knownClientApplications](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-on-behalf-of-flow#default-and-combined-consent) for combined consent.
 
-Set these in `enterprise/.env` (copy from `example.env`):
+Set the license and Entra values in `enterprise/.env` (copy from `example.env`). **Helm chart version** is `ENTERPRISE_AGW_VERSION` in `enterprise/version.env` (sourced by `setup-msft-obo.sh`).
 
 
 | Variable                     | Description                                                   | Example                                               |
 | ---------------------------- | ------------------------------------------------------------- | ----------------------------------------------------- |
 | `AGENTGATEWAY_LICENSE`       | Enterprise Agentgateway license key                           | (your key)                                            |
-| `ENTERPRISE_AGW_VERSION`     | Chart version                                                 | `2.2.0`                                               |
+| `ENTERPRISE_AGW_VERSION`     | Chart version (in `enterprise/version.env`, not `.env`)       | `2.2.0`                                               |
 | `ENTRA_TENANT_ID`            | Entra tenant ID (UUID)                                        | `5e7d8166-7876-4755-a1a4-b476d4a344f6`                |
 | `ENTRA_MIDDLETIER_CLIENT_ID` | Middle-tier app (client) ID — token’s `aud` is `api://<this>` | `ec791040-80f8-4129-bf34-96a0e0672c96`                |
 | `ENTRA_DOWNSTREAM_SCOPE`     | Downstream API scope                                          | `api://9beda151-9370-42f2-a2f7-17933c5c5a7c/.default` |
@@ -60,7 +60,7 @@ From the **enterprise** directory:
 ```bash
 cd enterprise
 cp example.env .env
-# Edit .env: set AGENTGATEWAY_LICENSE, ENTERPRISE_AGW_VERSION, and all ENTRA_* variables above.
+# Edit .env: set AGENTGATEWAY_LICENSE and all ENTRA_* variables above. Bump chart version in version.env if needed.
 
 ./setup-msft-obo.sh
 ```

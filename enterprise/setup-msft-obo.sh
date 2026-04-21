@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # End-to-end setup for Microsoft Entra OBO with Enterprise Agentgateway.
 # Creates a kind cluster (agw-msft-obo), installs Gateway API + Agentgateway with Entra OBO config,
-# and applies the msft-obo manifests. Requires .env with license, version, and Entra variables.
+# and applies the msft-obo manifests. Requires .env (license, Entra) and version.env (chart version).
 # See enterprise/resources/msft-obo/README.md for full guide.
 
 set -e
@@ -13,11 +13,12 @@ CREATE_KIND_CLUSTER="${CREATE_KIND_CLUSTER:-1}"
 
 set -a
 source .env
+source version.env
 set +a
 
 for v in AGENTGATEWAY_LICENSE ENTERPRISE_AGW_VERSION ENTRA_TENANT_ID ENTRA_MIDDLETIER_CLIENT_ID ENTRA_DOWNSTREAM_SCOPE ENTRA_OBO_CLIENT_SECRET; do
   if [[ -z "${!v}" ]]; then
-    echo "Missing required env: $v. Set it in enterprise/.env (see example.env and resources/msft-obo/README.md)." >&2
+    echo "Missing required env: $v. Chart version: enterprise/version.env; other values: enterprise/.env (see example.env and resources/msft-obo/README.md)." >&2
     exit 1
   fi
 done

@@ -9,11 +9,12 @@ CREATE_KIND_CLUSTER="${CREATE_KIND_CLUSTER:-1}"
 
 set -a
 source .env
+source version.env
 set +a
 
 for v in AGENTGATEWAY_LICENSE ENTERPRISE_AGW_VERSION; do
   if [[ -z "${!v}" ]]; then
-    echo "Missing required env: $v. Set it in enterprise/.env (see example.env and resources/obo/README.md)." >&2
+    echo "Missing required env: $v. Chart version: enterprise/version.env; secrets: enterprise/.env (see example.env and resources/obo/README.md)." >&2
     exit 1
   fi
 done
