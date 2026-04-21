@@ -154,6 +154,7 @@ The script (`enterprise/validate/run-tests.sh`) covers all 20 automated tests:
 | 14–15 | OPA ext_authz: gpt-4o denied; gpt-3.5-turbo + header allowed |
 | 16–18 | A2AS: Turn 1, Turn 2 multi-turn, prompt injection refused |
 | 19–20 | MCP /public/mcp tools listed; /mcp role-gated (mcp-user > other-user) |
+| 21–23 | MCP Search mode (/search/mcp): 2 meta-tools only; get_tool; invoke_tool real backend |
 | S1–S3 | SKIP: Auth0 DCR, OpenFGA, Observability (require browser/manual setup) |
 
 The script auto-starts dependencies (OPA via `docker run -d`, guardrail Flask servers)

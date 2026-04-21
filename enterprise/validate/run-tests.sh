@@ -24,7 +24,8 @@
 #   11:   Failover
 #   12-15: Policy + OPA
 #   16-18: A2AS
-#   19-20: MCP
+#   19-20: MCP (public + JWT role-gated)
+#   21-23: MCP Search / progressive disclosure
 # =============================================================================
 set -uo pipefail
 
@@ -534,6 +535,102 @@ run_mcp_tests() {
   fi
 }
 
+run_mcp_search_test() {
+  printf "\n${BLD}[ MCP Search / Progressive Disclosure ]${RST}\n"
+
+  # mcp-search.yaml is not in setup-mcp.sh — apply idempotently so this test is self-contained.
+  kubectl apply -f "$REPO/enterprise/resources/mcp/mcp-search.yaml" &>/dev/null || true
+  sleep 2  # brief settle time for route to be programmed
+
+  # Initialize an MCP session on /search/mcp (no auth required)
+  local sid; sid=$(mcp_session_id "/search/mcp")
+  if [[ -z "$sid" ]]; then
+    fail 21 "MCP /search/mcp: progressive disclosure → 2 meta-tools" "could not get session ID"
+    fail 22 "MCP /search/mcp: get_tool fetches named tool schema" "no session"
+    fail 23 "MCP /search/mcp: invoke_tool executes backend tool" "no session"
+    return
+  fi
+
+  # 21. tools/list must return exactly 2 meta-tools: get_tool + invoke_tool
+  #     In Search mode the gateway does NOT expose the full tool list from backends
+  #     (deepwiki ~13 tools + microsoft 3 tools = 16 real tools are hidden behind the meta-tools).
+  local tools_json; tools_json=$(curl -s --max-time 20 -X POST "$AGW_BASE/search/mcp" \
+    -H 'Content-Type: application/json' \
+    -H 'Accept: application/json, text/event-stream' \
+    -H "mcp-session-id: $sid" \
+    -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+    | python3 "$SCRIPT_DIR/parse-mcp-sse.py" --json)
+  local count; count=$(echo "$tools_json" | \
+    python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null)
+  local has_get; has_get=$(echo "$tools_json" | \
+    python3 -c "import sys,json; print('get_tool' in json.load(sys.stdin))" 2>/dev/null)
+  local has_invoke; has_invoke=$(echo "$tools_json" | \
+    python3 -c "import sys,json; print('invoke_tool' in json.load(sys.stdin))" 2>/dev/null)
+
+  if [[ "$count" == "2" && "$has_get" == "True" && "$has_invoke" == "True" ]]; then
+    pass 21 "MCP /search/mcp: progressive disclosure → 2 meta-tools" "get_tool + invoke_tool (not all 16 backend tools)"
+  else
+    fail 21 "MCP /search/mcp: progressive disclosure → 2 meta-tools" "count=$count has_get=$has_get has_invoke=$has_invoke"
+  fi
+
+  # 22. get_tool: fetch schema for a specific backend tool by name.
+  #     Validates that the gateway can lazily disclose a tool definition on demand.
+  local get_raw; get_raw=$(curl -s --max-time 20 -X POST "$AGW_BASE/search/mcp" \
+    -H 'Content-Type: application/json' \
+    -H 'Accept: application/json, text/event-stream' \
+    -H "mcp-session-id: $sid" \
+    -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"get_tool","arguments":{"name":"deepwiki_read_wiki_structure"}}}')
+  local has_schema; has_schema=$(echo "$get_raw" | python3 -c "
+import sys, json
+raw = sys.stdin.read()
+for line in raw.splitlines():
+    if line.startswith('data: '):
+        try:
+            d = json.loads(line[6:])
+            text = d['result']['content'][0]['text']
+            print('True' if 'repoName' in text else 'False')
+        except Exception:
+            print('False')
+        break
+else:
+    print('False')
+" 2>/dev/null)
+  if [[ "$has_schema" == "True" ]]; then
+    pass 22 "MCP /search/mcp: get_tool fetches named tool schema" "deepwiki_read_wiki_structure.repoName confirmed"
+  else
+    fail 22 "MCP /search/mcp: get_tool fetches named tool schema" "schema missing or malformed"
+  fi
+
+  # 23. invoke_tool: call a real backend tool and verify results are returned.
+  #     Uses microsoft_microsoft_docs_search (no auth) as a live probe.
+  local invoke_raw; invoke_raw=$(curl -s --max-time 45 -X POST "$AGW_BASE/search/mcp" \
+    -H 'Content-Type: application/json' \
+    -H 'Accept: application/json, text/event-stream' \
+    -H "mcp-session-id: $sid" \
+    -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"invoke_tool","arguments":{"name":"microsoft_microsoft_docs_search","arguments":{"query":"Kubernetes"}}}}')
+  local result_count; result_count=$(echo "$invoke_raw" | python3 -c "
+import sys, json
+raw = sys.stdin.read()
+for line in raw.splitlines():
+    if line.startswith('data: '):
+        try:
+            d = json.loads(line[6:])
+            text = d['result']['content'][0]['text']
+            data = json.loads(text)
+            print(len(data.get('results', [])))
+        except Exception:
+            print(0)
+        break
+else:
+    print(0)
+" 2>/dev/null)
+  if [[ "$result_count" =~ ^[1-9][0-9]*$ ]]; then
+    pass 23 "MCP /search/mcp: invoke_tool executes backend tool" "${result_count} results from microsoft"
+  else
+    fail 23 "MCP /search/mcp: invoke_tool executes backend tool" "result_count=${result_count:-0} (backend reachable?)"
+  fi
+}
+
 run_skipped() {
   printf "\n${BLD}[ Skipped — require browser / interactive setup ]${RST}\n"
   skip "S1" "Auth0 MCP OAuth DCR (/secure/mcp via ngrok)" "needs browser + ngrok https tunnel"
@@ -610,6 +707,7 @@ main() {
   run_opa_tests           # 14-15
   run_a2as_tests          # 16-18
   run_mcp_tests           # 19-20
+  run_mcp_search_test     # 21-23
   run_skipped             # S1-S3
 
   print_summary
