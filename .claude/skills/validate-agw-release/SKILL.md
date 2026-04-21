@@ -132,17 +132,44 @@ curl -s http://localhost:3000/gemini/v1/chat/completions \
 
 A 200 with a populated `choices[0].message.content` means the data plane is healthy.
 
-### Step 9: Manual README walkthrough
+### Step 9: Automated test suite (Claude drives — do NOT hand off to the user)
 
-Before starting curl tests, source `enterprise/.env` from the `enterprise/` directory to load `CLIENT_SECRET` and other vars into the shell. **Each Bash invocation is a fresh shell — re-source at the top of every multi-command block that needs Keycloak tokens:**
+**YOU (Claude) must run the test script using the Bash tool.** Do not ask the user to run it. Do not hand off to README.md. Run the script, capture its output, and relay the summary table.
 
 ```bash
-cd /path/to/agentgateway-demos
-set -a && source enterprise/.env && set +a
-TOKEN=$(./get-keycloak-token.sh mcp-user)
+cd /Users/ceposta/Dropbox/postamac-share/dev/code/agentgateway-demos
+enterprise/validate/run-tests.sh
 ```
 
-Work through `README.md` top-down against `localhost:3000`. Each section is a pass/fail check. Important callouts:
+The script (`enterprise/validate/run-tests.sh`) covers all 20 automated tests:
+
+| # | What it tests |
+|---|---------------|
+| 1–3 | Gemini / Anthropic / Bedrock unified API (no auth) → 200 |
+| 4–5 | OpenAI SSO gate: no token → 403; Keycloak token → 200 |
+| 6 | Anthropic rate limit (500 tok/min) → 429 on second large request |
+| 7 | Failover: gpt-5 → failover-429 → should retry secondary gpt-4o |
+| 8–11 | Guardrails: CC masking, OpenAI moderation, Model Armor webhook, Bedrock webhook |
+| 12–13 | CEL policy: mcp-user (supply-chain role) → 200; other-user → 403 |
+| 14–15 | OPA ext_authz: gpt-4o denied; gpt-3.5-turbo + header allowed |
+| 16–18 | A2AS: Turn 1, Turn 2 multi-turn, prompt injection refused |
+| 19–20 | MCP /public/mcp tools listed; /mcp role-gated (mcp-user > other-user) |
+| S1–S3 | SKIP: Auth0 DCR, OpenFGA, Observability (require browser/manual setup) |
+
+The script auto-starts dependencies (OPA via `docker run -d`, guardrail Flask servers)
+if they are not already running. It prints a coloured PASS/FAIL/SKIP table and exits
+non-zero if any test fails.
+
+**Important notes the script already handles:**
+- OPA health returns `{}` not `{"status":"ok"}` — the script checks correctly
+- MCP responses are SSE format with multi-line JSON; `enterprise/validate/parse-mcp-sse.py` handles this
+- Each Bash invocation re-sources `enterprise/.env` for Keycloak tokens
+- Bedrock FAIL notes "expired creds" when auth error detected
+
+After the script finishes, report the full summary table output to the user verbatim.
+Then note any FAILs with your assessment (bug, config issue, or expired credentials).
+
+**Callouts for reference when interpreting results:**
 
 - **Two different IdPs — do not conflate them.**
   - **Auth0 (`ceposta-solo.auth0.com`):** Used for the **Solo Enterprise / management UI** path (`setup-gateway.sh` installs `kagent-mgmt` with OIDC issuer `https://ceposta-solo.auth0.com/`, and the controller Helm values point token-exchange JWKS validators at Auth0). Confirm login flows for the UI on port 4000 against this integration.
