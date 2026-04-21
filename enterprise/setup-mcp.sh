@@ -7,5 +7,6 @@ kubectl apply -f ./resources/mcp/public.yaml
 kubectl apply -f ./resources/mcp/jwt-secure.yaml
 kubectl apply -f ./resources/mcp/public-oauth.yaml
 kubectl apply -f ./resources/mcp/mcp-oidc.yaml
+kubectl apply -f ./resources/mcp/mcp-search.yaml
 
 envsubst < ./resources/mcp/public-oauth-entra.yaml | kubectl apply -f -
