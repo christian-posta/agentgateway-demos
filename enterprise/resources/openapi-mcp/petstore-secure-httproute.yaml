@@ -33,7 +33,7 @@ spec:
             type: Exact
             value: /.well-known/oauth-authorization-server/secure-openapi-mcp/mcp
       backendRefs:
-        - name: petstore-custom-mcp
+        - name: petstore-code-mcp
           group: enterpriseagentgateway.solo.io
           kind: EnterpriseAgentgatewayBackend
 ---
@@ -69,7 +69,7 @@ spec:
       providers:
         - issuer: https://ceposta-solo.auth0.com/
           audiences:
-            - https://ceposta-agw.ngrok.io/secure-openapi-mcp/mcp
+            - https://ceposta-agw.ngrok.io/mcp
           jwks:
             remote:
               # Leave off the initial `/` — matches resources/mcp/public-oauth.yaml.
