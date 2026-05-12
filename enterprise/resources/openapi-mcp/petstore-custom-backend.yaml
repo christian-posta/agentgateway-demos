@@ -1,0 +1,233 @@
+# EnterpriseAgentgatewayBackend: OpenAPI → custom MCP targets (standard tool mode)
+#
+# Each target was derived from a Petstore3 OpenAPI operation.
+# To regenerate from a live petstore spec:
+#
+#   go run ./ent-controller/cmd/openapi-to-composite \
+#     --name petstore-custom-mcp \
+#     --namespace agentgateway-system \
+#     --service-name petstore \
+#     --service-port 8080 \
+#     --base-path /api/v3 \
+#     --operation getPetById \
+#     --operation findPetsByStatus \
+#     --operation addPet \
+#     --operation updatePet \
+#     --operation getInventory \
+#     --operation deletePet \
+#     /tmp/petstore-openapi.json
+#
+# (Run from the agentgateway-enterprise checkout on exp/openapitocustom)
+apiVersion: enterpriseagentgateway.solo.io/v1alpha1
+kind: EnterpriseAgentgatewayBackend
+metadata:
+  name: petstore-custom-mcp
+  namespace: agentgateway-system
+spec:
+  entMcp:
+    targets:
+      - name: get-pet-by-id
+        custom:
+          description: "Find pet by ID. Returns a single pet."
+          inputSchema:
+            type: object
+            additionalProperties: false
+            required: [petId]
+            properties:
+              petId:
+                type: integer
+                format: int64
+                description: "ID of pet to return"
+          steps:
+            - name: request
+              http:
+                backendRef:
+                  group: ""
+                  kind: Service
+                  name: petstore
+                  port: 8080
+                method: GET
+                path: '"/api/v3/pet/" + string(input.petId)'
+          output: output.request
+
+      - name: find-pets-by-status
+        custom:
+          description: "Finds Pets by status. Returns a list of pets matching the given status."
+          inputSchema:
+            type: object
+            additionalProperties: false
+            required: [status]
+            properties:
+              status:
+                type: string
+                enum: [available, pending, sold]
+                description: "Status values to filter by"
+          steps:
+            - name: request
+              http:
+                backendRef:
+                  group: ""
+                  kind: Service
+                  name: petstore
+                  port: 8080
+                method: GET
+                path: '"/api/v3/pet/findByStatus?status=" + input.status'
+          output: output.request
+
+      - name: add-pet
+        custom:
+          description: "Add a new pet to the store."
+          inputSchema:
+            type: object
+            additionalProperties: false
+            required: [name, status]
+            properties:
+              name:
+                type: string
+                description: "Name of the pet"
+              status:
+                type: string
+                enum: [available, pending, sold]
+                description: "Pet status in the store"
+          steps:
+            - name: request
+              http:
+                backendRef:
+                  group: ""
+                  kind: Service
+                  name: petstore
+                  port: 8080
+                method: POST
+                path: '"/api/v3/pet"'
+                body: '{"name": input.name, "status": input.status}'
+                headers:
+                  - name: Content-Type
+                    value: '"application/json"'
+          output: output.request
+
+      - name: update-pet
+        custom:
+          description: "Update an existing pet by Id."
+          inputSchema:
+            type: object
+            additionalProperties: false
+            required: [id, name, status]
+            properties:
+              id:
+                type: integer
+                format: int64
+                description: "Pet id to update"
+              name:
+                type: string
+                description: "Updated name of the pet"
+              status:
+                type: string
+                enum: [available, pending, sold]
+                description: "Updated status of the pet"
+          steps:
+            - name: request
+              http:
+                backendRef:
+                  group: ""
+                  kind: Service
+                  name: petstore
+                  port: 8080
+                method: PUT
+                path: '"/api/v3/pet"'
+                body: '{"id": input.id, "name": input.name, "status": input.status}'
+                headers:
+                  - name: Content-Type
+                    value: '"application/json"'
+          output: output.request
+
+      - name: get-inventory
+        custom:
+          description: "Returns pet inventories by status. Returns a map of status codes to quantities."
+          inputSchema:
+            type: object
+            additionalProperties: false
+            properties: {}
+          steps:
+            - name: request
+              http:
+                backendRef:
+                  group: ""
+                  kind: Service
+                  name: petstore
+                  port: 8080
+                method: GET
+                path: '"/api/v3/store/inventory"'
+          output: output.request
+
+      - name: delete-pet
+        custom:
+          description: "Deletes a pet by Id."
+          inputSchema:
+            type: object
+            additionalProperties: false
+            required: [petId]
+            properties:
+              petId:
+                type: integer
+                format: int64
+                description: "Pet id to delete"
+          steps:
+            - name: request
+              http:
+                backendRef:
+                  group: ""
+                  kind: Service
+                  name: petstore
+                  port: 8080
+                method: DELETE
+                path: '"/api/v3/pet/" + string(input.petId)'
+          output: output.request
+
+      # Hand-written chained target — shows what `custom` is actually for:
+      # step 2's path depends on step 1's response, and the `output` CEL
+      # composes both step results into a single tool result.
+      - name: featured-pet
+        custom:
+          description: "Find pets by status, then fetch full details for the first match. Demonstrates chained HTTP steps + CEL output composition."
+          inputSchema:
+            type: object
+            additionalProperties: false
+            required: [status]
+            properties:
+              status:
+                type: string
+                enum: [available, pending, sold]
+                description: "Status to search for"
+          steps:
+            # Step 1: list pets matching the requested status
+            - name: list
+              http:
+                backendRef:
+                  group: ""
+                  kind: Service
+                  name: petstore
+                  port: 8080
+                method: GET
+                path: '"/api/v3/pet/findByStatus?status=" + input.status'
+            # Step 2: pull full details for the FIRST pet in step 1's response.
+            # This is the chain — step 2's path reads output.list[0].id.
+            - name: detail
+              http:
+                backendRef:
+                  group: ""
+                  kind: Service
+                  name: petstore
+                  port: 8080
+                method: GET
+                path: '"/api/v3/pet/" + string(output.list[0].id)'
+          # Compose both steps into a single result for the MCP client.
+          output: |
+            {
+              "requested_status": input.status,
+              "total_matches": size(output.list),
+              "first_match_summary": {
+                "id": output.list[0].id,
+                "name": output.list[0].name
+              },
+              "first_match_details": output.detail
+            }

@@ -33,6 +33,19 @@ kubectl port-forward -n monitoring svc/grafana-prometheus 3002:3000
 ```
 
 
+## Set up OpenAPI → MCP demos
+
+```bash
+# Custom mode: each OpenAPI operation becomes its own MCP tool
+./setup-custom-openapi-mcp.sh
+
+# Code Mode: all operations collapse into a single run_code tool (JS sandbox)
+./setup-code-openapi-mcp.sh
+```
+
+See `resources/openapi-mcp/README-custom.md` and `resources/openapi-mcp/README-code.md`
+for curl examples and how-it-works explanations.
+
 ## Set up Elicitations
 
 Elicitations can be demo'd by setting up the following:

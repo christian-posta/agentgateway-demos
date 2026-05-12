@@ -15,11 +15,11 @@ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/downloa
 # Install CRDs
 helm upgrade -i --create-namespace --namespace agentgateway-system \
     --version $ENTERPRISE_AGW_VERSION enterprise-agentgateway-crds \
-    oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts/enterprise-agentgateway-crds
+    oci://us-central1-docker.pkg.dev/developers-369321/enterprise-agentgateway-dev/charts/enterprise-agentgateway-crds
 
 
 # Install controller / control plane
-helm upgrade -i -n agentgateway-system enterprise-agentgateway oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts/enterprise-agentgateway \
+helm upgrade -i -n agentgateway-system enterprise-agentgateway oci://us-central1-docker.pkg.dev/developers-369321/enterprise-agentgateway-dev/charts/enterprise-agentgateway \
 --create-namespace \
 --version $ENTERPRISE_AGW_VERSION \
 --set-string licensing.licenseKey=$AGENTGATEWAY_LICENSE \

@@ -26,6 +26,7 @@
 #   16-18: A2AS
 #   19-20: MCP (public + JWT role-gated)
 #   21-23: MCP Search / progressive disclosure
+#   24-25: OpenAPI → MCP (custom mode + code mode)
 # =============================================================================
 set -uo pipefail
 
@@ -631,6 +632,233 @@ else:
   fi
 }
 
+run_openapi_mcp_tests() {
+  printf "\n${BLD}[ OpenAPI → MCP (custom + code mode) ]${RST}\n"
+
+  # Apply resources idempotently so this group is self-contained.
+  kubectl apply -f "$REPO/enterprise/resources/openapi-mcp/petstore-deployment.yaml" &>/dev/null || true
+  kubectl apply -f "$REPO/enterprise/resources/openapi-mcp/petstore-custom-backend.yaml" &>/dev/null || true
+  kubectl apply -f "$REPO/enterprise/resources/openapi-mcp/petstore-custom-httproute.yaml" &>/dev/null || true
+  kubectl apply -f "$REPO/enterprise/resources/openapi-mcp/petstore-code-backend.yaml" &>/dev/null || true
+  kubectl apply -f "$REPO/enterprise/resources/openapi-mcp/petstore-code-httproute.yaml" &>/dev/null || true
+  kubectl wait deployment/petstore -n agentgateway-system \
+    --for=condition=Available --timeout=60s &>/dev/null || true
+  sleep 3  # brief settle time for routes to be programmed
+
+  # 24a. Custom mode: initialize + tools/list → 7 tools (6 generated 1:1 + 1 hand-written chained)
+  local sid; sid=$(mcp_session_id "/custom-openapi-mcp/mcp")
+  if [[ -z "$sid" ]]; then
+    fail 24 "OpenAPI custom MCP: 7 tools exposed (no auth)" "could not get session ID"
+  else
+    local tools_json; tools_json=$(curl -s --max-time 20 -X POST "$AGW_BASE/custom-openapi-mcp/mcp" \
+      -H 'Content-Type: application/json' \
+      -H 'Accept: application/json, text/event-stream' \
+      -H "mcp-session-id: $sid" \
+      -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+      | python3 "$SCRIPT_DIR/parse-mcp-sse.py" --json)
+    local count; count=$(echo "$tools_json" | \
+      python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null)
+    # Tool names may be namespaced as {target}_{target} in some builds — use substring match.
+    local has_get_pet; has_get_pet=$(echo "$tools_json" | \
+      python3 -c "import sys,json; names=json.load(sys.stdin); print(any('get-pet-by-id' in n for n in names))" 2>/dev/null)
+    local has_featured; has_featured=$(echo "$tools_json" | \
+      python3 -c "import sys,json; names=json.load(sys.stdin); print(any('featured-pet' in n for n in names))" 2>/dev/null)
+    local actual_get_pet; actual_get_pet=$(echo "$tools_json" | \
+      python3 -c "import sys,json; names=json.load(sys.stdin); print(next((n for n in names if 'get-pet-by-id' in n), ''))" 2>/dev/null)
+    if [[ "$count" == "7" && "$has_get_pet" == "True" && "$has_featured" == "True" ]]; then
+      pass 24 "OpenAPI custom MCP: 7 tools exposed (no auth)" "tools=$count, ${actual_get_pet} + featured-pet present"
+    else
+      fail 24 "OpenAPI custom MCP: 7 tools exposed (no auth)" "count=$count has_get_pet=$has_get_pet has_featured=$has_featured"
+    fi
+  fi
+
+  # 24b. Custom mode: tools/call get-pet-by-id → petId 1 returns a pet object
+  # Resolve the actual tool name (may be namespaced) from the tools/list response.
+  if [[ -n "$sid" ]]; then
+    local tools_json_24b; tools_json_24b=$(curl -s --max-time 20 -X POST "$AGW_BASE/custom-openapi-mcp/mcp" \
+      -H 'Content-Type: application/json' \
+      -H 'Accept: application/json, text/event-stream' \
+      -H "mcp-session-id: $sid" \
+      -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+      | python3 "$SCRIPT_DIR/parse-mcp-sse.py" --json)
+    local actual_tool_name; actual_tool_name=$(echo "$tools_json_24b" | \
+      python3 -c "import sys,json; names=json.load(sys.stdin); print(next((n for n in names if 'get-pet-by-id' in n), 'get-pet-by-id'))" 2>/dev/null)
+    local call_raw; call_raw=$(curl -s --max-time 30 -X POST "$AGW_BASE/custom-openapi-mcp/mcp" \
+      -H 'Content-Type: application/json' \
+      -H 'Accept: application/json, text/event-stream' \
+      -H "mcp-session-id: $sid" \
+      -d "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":{\"name\":\"${actual_tool_name}\",\"arguments\":{\"petId\":1}}}")
+    local has_id; has_id=$(echo "$call_raw" | python3 -c "
+import sys, json
+raw = sys.stdin.read()
+for line in raw.splitlines():
+    if line.startswith('data: '):
+        try:
+            d = json.loads(line[6:])
+            content = d.get('result', {}).get('content', [])
+            if content:
+                body = json.loads(content[0].get('text', '{}'))
+                print('True' if 'id' in body else 'False')
+            else:
+                sc = d.get('result', {}).get('structuredContent', {})
+                success = sc.get('success', {})
+                print('True' if 'id' in (success if isinstance(success, dict) else {}) else 'False')
+        except Exception:
+            print('False')
+        break
+else:
+    print('False')
+" 2>/dev/null)
+    if [[ "$has_id" == "True" ]]; then
+      pass "24b" "OpenAPI custom MCP: tools/call get-pet-by-id(1) → pet object" "id field present"
+    else
+      fail "24b" "OpenAPI custom MCP: tools/call get-pet-by-id(1) → pet object" "id field missing"
+    fi
+  else
+    fail "24b" "OpenAPI custom MCP: tools/call get-pet-by-id(1) → pet object" "no session"
+  fi
+
+  # 24c. Custom mode: chained target featured-pet runs step 1, threads its
+  # response into step 2, and the output CEL composes both responses.
+  # Proves step-to-step plumbing AND multi-field output composition work.
+  if [[ -n "$sid" ]]; then
+    local featured_name; featured_name=$(echo "$tools_json_24b" | \
+      python3 -c "import sys,json; names=json.load(sys.stdin); print(next((n for n in names if 'featured-pet' in n), 'featured-pet'))" 2>/dev/null)
+    local chain_raw; chain_raw=$(curl -s --max-time 30 -X POST "$AGW_BASE/custom-openapi-mcp/mcp" \
+      -H 'Content-Type: application/json' \
+      -H 'Accept: application/json, text/event-stream' \
+      -H "mcp-session-id: $sid" \
+      -d "{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"tools/call\",\"params\":{\"name\":\"${featured_name}\",\"arguments\":{\"status\":\"available\"}}}")
+    local chain_ok; chain_ok=$(echo "$chain_raw" | python3 -c "
+import sys, json
+raw = sys.stdin.read()
+for line in raw.splitlines():
+    if line.startswith('data: '):
+        try:
+            d = json.loads(line[6:])
+            content = d.get('result', {}).get('content', [])
+            body = json.loads(content[0]['text']) if content else d.get('result', {}).get('structuredContent', {})
+            # Both fields are required: requested_status proves input.status was plumbed through,
+            # first_match_details.id proves step 2 used step 1's output as part of its path.
+            ok = (body.get('requested_status') == 'available'
+                  and isinstance(body.get('first_match_details', {}).get('id'), int))
+            print('True' if ok else 'False')
+        except Exception:
+            print('False')
+        break
+else:
+    print('False')
+" 2>/dev/null)
+    if [[ "$chain_ok" == "True" ]]; then
+      pass "24c" "OpenAPI custom MCP: chained ${featured_name} composes step 1→2" "step 2 used step 1's pet id"
+    else
+      fail "24c" "OpenAPI custom MCP: chained ${featured_name} composes step 1→2" "chain output missing/incomplete"
+    fi
+  else
+    fail "24c" "OpenAPI custom MCP: chained featured-pet composes step 1→2" "no session"
+  fi
+
+  # 25a. Code mode: tools/list → exactly 1 tool named run_code
+  local sid2; sid2=$(mcp_session_id "/code-openapi-mcp/mcp")
+  if [[ -z "$sid2" ]]; then
+    fail 25 "OpenAPI code MCP: single run_code tool exposed" "could not get session ID"
+  else
+    local tools2; tools2=$(curl -s --max-time 20 -X POST "$AGW_BASE/code-openapi-mcp/mcp" \
+      -H 'Content-Type: application/json' \
+      -H 'Accept: application/json, text/event-stream' \
+      -H "mcp-session-id: $sid2" \
+      -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+      | python3 "$SCRIPT_DIR/parse-mcp-sse.py" --json)
+    local count2; count2=$(echo "$tools2" | \
+      python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null)
+    local has_run_code; has_run_code=$(echo "$tools2" | \
+      python3 -c "import sys,json; print('run_code' in json.load(sys.stdin))" 2>/dev/null)
+    if [[ "$count2" == "1" && "$has_run_code" == "True" ]]; then
+      pass 25 "OpenAPI code MCP: single run_code tool exposed" "count=1 run_code present"
+    else
+      fail 25 "OpenAPI code MCP: single run_code tool exposed" "count=$count2 has_run_code=$has_run_code"
+    fi
+  fi
+
+  # 25b. Code mode: run_code description contains an exact callable name for find-pets-by-status.
+  # NOTE: in current builds the gateway namespaces each custom target as {name}_{name},
+  # so the JS binding is e.g. find_pets_by_status_find_pets_by_status. We discover the
+  # actual callable name from the description rather than asserting a specific form,
+  # so this test stays correct if upstream ever flattens the doubling.
+  local find_pets_fn=""
+  if [[ -n "$sid2" ]]; then
+    local desc_raw; desc_raw=$(curl -s --max-time 20 -X POST "$AGW_BASE/code-openapi-mcp/mcp" \
+      -H 'Content-Type: application/json' \
+      -H 'Accept: application/json, text/event-stream' \
+      -H "mcp-session-id: $sid2" \
+      -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}')
+    find_pets_fn=$(echo "$desc_raw" | python3 -c "
+import sys, json, re
+raw = sys.stdin.read()
+for line in raw.splitlines():
+    if line.startswith('data: '):
+        try:
+            d = json.loads(line[6:])
+            tools = d['result']['tools']
+            desc = next((t['description'] for t in tools if t['name'] == 'run_code'), '')
+            # Find any 'async function NAME' where NAME starts with find_pets_by_status
+            m = re.search(r'async function (find_pets_by_status\w*)\s*\(', desc)
+            print(m.group(1) if m else '')
+        except Exception:
+            print('')
+        break
+" 2>/dev/null)
+    if [[ -n "$find_pets_fn" ]]; then
+      pass "25b" "OpenAPI code MCP: run_code description has JS API bindings" "binding=${find_pets_fn}"
+    else
+      fail "25b" "OpenAPI code MCP: run_code description has JS API bindings" "no find_pets_by_status* binding in description"
+    fi
+  else
+    fail "25b" "OpenAPI code MCP: run_code description has JS API bindings" "no session"
+  fi
+
+  # 25c. Code mode: run_code executes JS and returns structured success.
+  # Uses the binding name discovered in 25b so we call whatever the runtime actually injects.
+  if [[ -n "$sid2" && -n "$find_pets_fn" ]]; then
+    local js_code; js_code="const pets = await ${find_pets_fn}({ status: \"available\" }); pets.length"
+    local code_payload; code_payload=$(python3 -c "
+import json, sys
+print(json.dumps({
+    'jsonrpc': '2.0', 'id': 3, 'method': 'tools/call',
+    'params': {'name': 'run_code', 'arguments': {'code': sys.argv[1]}}
+}))" "$js_code")
+    local run_raw; run_raw=$(curl -s --max-time 30 -X POST "$AGW_BASE/code-openapi-mcp/mcp" \
+      -H 'Content-Type: application/json' \
+      -H 'Accept: application/json, text/event-stream' \
+      -H "mcp-session-id: $sid2" \
+      -d "$code_payload")
+    local is_success; is_success=$(echo "$run_raw" | python3 -c "
+import sys, json
+raw = sys.stdin.read()
+for line in raw.splitlines():
+    if line.startswith('data: '):
+        try:
+            d = json.loads(line[6:])
+            sc = d.get('result', {}).get('structuredContent', {})
+            print('True' if 'success' in sc and isinstance(sc['success'], (int, float)) else 'False')
+        except Exception:
+            print('False')
+        break
+else:
+    print('False')
+" 2>/dev/null)
+    if [[ "$is_success" == "True" ]]; then
+      pass "25c" "OpenAPI code MCP: run_code JS returns numeric success" "${find_pets_fn} → number"
+    else
+      fail "25c" "OpenAPI code MCP: run_code JS returns numeric success" "structured success not numeric"
+    fi
+  elif [[ -z "$find_pets_fn" ]]; then
+    fail "25c" "OpenAPI code MCP: run_code JS returns numeric success" "no JS binding discovered in 25b"
+  else
+    fail "25c" "OpenAPI code MCP: run_code JS returns numeric success" "no session"
+  fi
+}
+
 run_skipped() {
   printf "\n${BLD}[ Skipped — require browser / interactive setup ]${RST}\n"
   skip "S1" "Auth0 MCP OAuth DCR (/secure/mcp via ngrok)" "needs browser + ngrok https tunnel"
@@ -708,6 +936,7 @@ main() {
   run_a2as_tests          # 16-18
   run_mcp_tests           # 19-20
   run_mcp_search_test     # 21-23
+  run_openapi_mcp_tests   # 24-25 (24b, 25b, 25c sub-cases)
   run_skipped             # S1-S3
 
   print_summary
