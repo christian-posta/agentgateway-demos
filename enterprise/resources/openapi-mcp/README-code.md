@@ -11,7 +11,7 @@ script, filter/join/aggregate in JS, and return only the answer.
 ## Setup
 
 ```bash
-./setup-code-openapi-mcp.sh
+./setup-openapi-mcp.sh
 ```
 
 Port-forward the gateway if not already done:

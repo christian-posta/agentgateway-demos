@@ -1,7 +1,7 @@
 # MCP-Auth–secured exposure of the petstore custom MCP backend.
 #
 # Reuses the existing `petstore-custom-mcp` EnterpriseAgentgatewayBackend
-# (created by ./setup-custom-openapi-mcp.sh or applied directly here) and
+# (enterprise/setup-openapi-mcp.sh applies the shared custom backend) and
 # attaches an EnterpriseAgentgatewayPolicy that uses the newer
 # `traffic.jwtAuthentication.mcp` field. This both:
 #   1. Validates incoming JWTs (Strict mode — required for `mcp`).

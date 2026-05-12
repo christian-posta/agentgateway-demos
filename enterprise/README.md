@@ -36,15 +36,8 @@ kubectl port-forward -n monitoring svc/grafana-prometheus 3002:3000
 ## Set up OpenAPI → MCP demos
 
 ```bash
-# Custom mode: each OpenAPI operation becomes its own MCP tool
-./setup-custom-openapi-mcp.sh
-
-# Code Mode: all operations collapse into a single run_code tool (JS sandbox)
-./setup-code-openapi-mcp.sh
-
-# Secure mode: same custom backend, fronted by traffic.jwtAuthentication.mcp
-# (JWT validation + MCP OAuth discovery + per-tool authorization).
-./setup-secure-openapi-mcp.sh
+# Installs Petstore + all three routes: custom, code, and secure OpenAPI→MCP demos.
+./setup-openapi-mcp.sh
 ```
 
 See `resources/openapi-mcp/README-custom.md`, `resources/openapi-mcp/README-code.md`,

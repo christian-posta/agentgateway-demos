@@ -12,9 +12,9 @@ the newer `traffic.jwtAuthentication.mcp` policy field. This single policy:
   validated JWT — reads are open to any authenticated caller; mutations
   require the `petstore:write` Auth0 permission.
 
-The backend itself (`petstore-custom-mcp`) is reused from
-`setup-custom-openapi-mcp.sh` — the only thing that's different about this
-demo is the secured route and policy.
+The backend itself (`petstore-custom-mcp`) is the same as **custom-openapi-mcp**;
+this demo only adds the secured route and policy (both are applied by
+`setup-openapi-mcp.sh`).
 
 ## Why `traffic.jwtAuthentication.mcp`?
 
@@ -37,7 +37,7 @@ Constraints (enforced by CRD validation):
 ## Setup
 
 ```bash
-./setup-secure-openapi-mcp.sh
+./setup-openapi-mcp.sh
 ```
 
 Port-forward the gateway if not already done:

@@ -10,7 +10,7 @@ no hand-written glue code needed.
 ## Setup
 
 ```bash
-./setup-custom-openapi-mcp.sh
+./setup-openapi-mcp.sh
 ```
 
 Port-forward the gateway if not already done:
