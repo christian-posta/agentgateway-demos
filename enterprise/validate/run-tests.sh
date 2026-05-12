@@ -27,6 +27,7 @@
 #   19-20: MCP (public + JWT role-gated)
 #   21-23: MCP Search / progressive disclosure
 #   24-25: OpenAPI → MCP (custom mode + code mode)
+#   26:    OpenAPI → MCP secured by traffic.jwtAuthentication.mcp (Auth0)
 # =============================================================================
 set -uo pipefail
 
@@ -859,11 +860,68 @@ else:
   fi
 }
 
+run_secure_openapi_mcp_tests() {
+  printf "\n${BLD}[ Secure OpenAPI → MCP (Auth0 + traffic.jwtAuthentication.mcp) ]${RST}\n"
+
+  # Apply resources idempotently so this group is self-contained.
+  kubectl apply -f "$REPO/enterprise/resources/openapi-mcp/petstore-deployment.yaml" &>/dev/null || true
+  kubectl apply -f "$REPO/enterprise/resources/openapi-mcp/petstore-custom-backend.yaml" &>/dev/null || true
+  kubectl apply -f "$REPO/enterprise/resources/openapi-mcp/petstore-secure-httproute.yaml" &>/dev/null || true
+  sleep 3  # brief settle time for route + policy to be programmed
+
+  # 26a. Unauthenticated POST → 401 with WWW-Authenticate header pointing at
+  # the resource metadata URL (that's how MCP clients discover the IdP).
+  local headers; headers=$(curl -s -D - -o /dev/null --max-time 10 \
+    -X POST "$AGW_BASE/secure-openapi-mcp/mcp" \
+    -H 'Content-Type: application/json' \
+    -H 'Accept: application/json, text/event-stream' \
+    -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"validate-agw","version":"1.0"}}}')
+  local status; status=$(echo "$headers" | grep -E '^HTTP/' | tail -1 | awk '{print $2}')
+  local has_www; has_www=$(echo "$headers" | grep -ci '^www-authenticate:')
+  if [[ "$status" == "401" && "$has_www" -gt 0 ]]; then
+    pass 26 "Secure OpenAPI MCP: no token → 401 + WWW-Authenticate" "JWT gate active"
+  elif [[ "$status" == "401" ]]; then
+    fail 26 "Secure OpenAPI MCP: no token → 401 + WWW-Authenticate" "401 but no WWW-Authenticate header"
+  else
+    fail 26 "Secure OpenAPI MCP: no token → 401 + WWW-Authenticate" "got HTTP $status"
+  fi
+
+  # 26b. /.well-known/oauth-protected-resource discovery returns JSON metadata
+  # without auth, and the `resource` field matches what's in resourceMetadata.
+  local pr_body; pr_body=$(http_body "$AGW_BASE/.well-known/oauth-protected-resource/secure-openapi-mcp/mcp")
+  local pr_resource; pr_resource=$(echo "$pr_body" | \
+    python3 -c "import sys,json; print(json.load(sys.stdin).get('resource',''))" 2>/dev/null)
+  if [[ -n "$pr_resource" ]]; then
+    pass "26b" "Secure OpenAPI MCP: protected-resource discovery → JSON" "resource=${pr_resource}"
+  else
+    fail "26b" "Secure OpenAPI MCP: protected-resource discovery → JSON" "no resource field in body"
+  fi
+
+  # 26c. /.well-known/oauth-authorization-server discovery — proxied to Auth0.
+  # We can't assume Auth0 reachability in CI, so accept any valid JSON with
+  # an issuer or authorization_endpoint field.
+  local as_body; as_body=$(http_body "$AGW_BASE/.well-known/oauth-authorization-server/secure-openapi-mcp/mcp")
+  local as_ok; as_ok=$(echo "$as_body" | python3 -c "
+import sys, json
+try:
+    d = json.load(sys.stdin)
+    print('True' if ('issuer' in d or 'authorization_endpoint' in d) else 'False')
+except Exception:
+    print('False')
+" 2>/dev/null)
+  if [[ "$as_ok" == "True" ]]; then
+    pass "26c" "Secure OpenAPI MCP: authorization-server discovery → JSON" "issuer/authorization_endpoint present"
+  else
+    fail "26c" "Secure OpenAPI MCP: authorization-server discovery → JSON" "auth-server metadata not JSON (Auth0 reachable?)"
+  fi
+}
+
 run_skipped() {
   printf "\n${BLD}[ Skipped — require browser / interactive setup ]${RST}\n"
   skip "S1" "Auth0 MCP OAuth DCR (/secure/mcp via ngrok)" "needs browser + ngrok https tunnel"
   skip "S2" "OpenFGA (/fga/openai)" "needs extauth-policy-engine binary + docker-compose"
   skip "S3" "Observability / Grafana" "run setup-observability.sh first if needed"
+  skip "S4" "Secure OpenAPI MCP: authenticated tools/call (Auth0 token)" "needs ngrok URL matching policy audiences + petstore:write permission"
 }
 
 # ── Summary table ─────────────────────────────────────────────────────────────
@@ -937,7 +995,8 @@ main() {
   run_mcp_tests           # 19-20
   run_mcp_search_test     # 21-23
   run_openapi_mcp_tests   # 24-25 (24b, 25b, 25c sub-cases)
-  run_skipped             # S1-S3
+  run_secure_openapi_mcp_tests  # 26 (26b, 26c sub-cases)
+  run_skipped             # S1-S4
 
   print_summary
 

@@ -49,7 +49,7 @@ Track progress through these steps. Only ONE step in_progress at a time.
 - [ ] 7. enterprise/setup-elicitation.sh (verify token-exchange secrets)
 - [ ] 8. Port-forward :3000 (gateway) and :4000 (UI); smoke-test Gemini curl
 - [ ] 9. Hand off to README.md manual walkthrough (+ OPA/OpenFGA)
-- [ ] 10. Teardown: kind delete cluster
+- [ ] 10. Stop background port-forwards (leave cluster running)
 ```
 
 ## Step-by-step
@@ -112,13 +112,27 @@ kubectl -n agentgateway-system get secret github-token-exchange databricks-token
 
 ### Step 8: Port-forwards + smoke test
 
-In separate terminals:
+**YOU (Claude) must start the port-forwards using the Bash tool** with `run_in_background: true`. Do not ask the user to open terminals.
 
 ```bash
-kubectl port-forward -n kagent              svc/solo-enterprise-ui              4000:80
-kubectl port-forward -n agentgateway-system svc/agentgateway                    3000:8080
-kubectl port-forward -n agentgateway-system deploy/agentgateway                 15000:15000   # optional: config_dump
+# Start port-forwards in the background and record their PIDs for teardown
+kubectl port-forward -n agentgateway-system svc/agentgateway 3000:8080 &>/tmp/pf-agw.log &
+echo $! > /tmp/pf-agw.pid
+kubectl port-forward -n kagent svc/solo-enterprise-ui 4000:80 &>/tmp/pf-ui.log &
+echo $! > /tmp/pf-ui.pid
 ```
+
+Wait ~5 seconds for the port-forwards to establish, then verify `:3000` is accepting connections:
+
+```bash
+sleep 5
+curl -s --max-time 5 http://localhost:3000/gemini/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"gemini-2.5-flash-lite","messages":[{"role":"user","content":"ping"}]}' \
+  &>/dev/null && echo "Port-forward :3000 OK" || echo "Port-forward :3000 NOT ready"
+```
+
+If `:3000` is not ready after 5s, wait another 5s and retry once before failing.
 
 > **Note:** Use `svc/agentgateway` (not `deploy/enterprise-agentgateway`) for data-plane traffic on port 3000. The `enterprise-agentgateway` deployment exposes only ports 9978/9093/9092/7777 (control plane); the Envoy proxy pod (`deploy/agentgateway`) handles port 8080 but only exposes 15020 directly. Port-forwarding to the `agentgateway` **service** is the correct approach.
 
@@ -197,6 +211,17 @@ Then note any FAILs with your assessment (bug, config issue, or expired credenti
 - Observability: this skill intentionally does NOT run `setup-observability.sh`. If the metrics/Grafana sections of `README.md` must be validated this pass, run it manually and redo the Grafana section.
 
 ### Step 10: Teardown
+
+**Do NOT delete the cluster automatically.** After the test suite finishes, stop only the background port-forwards that were started in Step 8, then report the summary to the user and stop. Leave the cluster running — the user will tear it down manually when ready.
+
+```bash
+# Stop port-forwards started in Step 8
+kill "$(cat /tmp/pf-agw.pid 2>/dev/null)" 2>/dev/null || true
+kill "$(cat /tmp/pf-ui.pid  2>/dev/null)" 2>/dev/null || true
+rm -f /tmp/pf-agw.pid /tmp/pf-ui.pid /tmp/pf-agw.log /tmp/pf-ui.log
+```
+
+When the user is ready to fully tear down, they can run manually:
 
 ```bash
 kind delete cluster --name "$CLUSTER_NAME"
