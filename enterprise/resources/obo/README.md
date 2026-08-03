@@ -74,7 +74,29 @@ Go to URL in your browser:
 http://localhost:3000/obo
 ```
 
-You'll need to login to the agent UI with user. 
+You'll need to login to the agent UI with user. After the agent calls MCP through the gateway, the exchanged OBO token appears in the **agentgateway** proxy request logs (`rq.headers.authorization`).
+
+### Extract the OBO token from gateway logs
+
+Use `get-bearer-from-logs.sh` to pull the bearer token from cluster logs (demo tokens only — not for production secrets):
+
+```bash
+cd enterprise/resources/obo
+
+# Latest OBO token issued by the AGW STS (raw JWT)
+./get-bearer-from-logs.sh --obo
+
+# Decode header + payload
+./get-bearer-from-logs.sh --obo -d
+
+# Source into your shell for curl / MCP clients
+eval "$(./get-bearer-from-logs.sh --obo --export)"
+
+# Follow logs while you interact with the agent UI
+./get-bearer-from-logs.sh -f --obo -d
+```
+
+Options: `-d` decode JWT, `-f` follow logs, `-a` all unique tokens in the window, `--tail N` (default 200). Override `NAMESPACE`, `DEPLOYMENT`, or `TAIL` if needed.
 
 User's access token that gets exchanged (note the may_act claim):
 
@@ -125,7 +147,7 @@ User's access token that gets exchanged (note the may_act claim):
 }
 ```
 
-OBO Token:
+OBO Token (what `./get-bearer-from-logs.sh --obo -d` should show after exchange):
 
 ```json
 {

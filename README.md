@@ -1038,7 +1038,15 @@ curl -X POST http://localhost:3000/opa/openai/v1/chat/completions \
 
 ## FGA Policy Enforcement
 
-See the `./policy/openfga/README.md` for setup. 
+See the `./policy/openfga/README.md` for setup.
+
+To show the relationships in a UI while demoing, open the hosted playground pointed at the
+local OpenFGA server (the built-in `localhost:3101/playground` link does **not** work — see
+`./policy/openfga/README.md`):
+
+```
+https://play.fga.dev/sandbox/?fga_api_host=127.0.0.1:8181&fga_api_scheme=http
+```
 
 This should fail:
 
@@ -1048,7 +1056,6 @@ TOKEN=$(./get-keycloak-token.sh)
 curl -X POST http://localhost:3000/fga/openai/v1/chat/completions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -H "x-opa-passthrough-enabled: true" \
   -d '{
     "model": "gpt-3.5-turbo",
     "messages": [{"role": "user", "content": "Hi, this is a hello world test."}]
@@ -1064,7 +1071,6 @@ TOKEN=$(./get-keycloak-token.sh)
 curl -X POST http://localhost:3000/fga/openai/v1/chat/completions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -H "x-opa-passthrough-enabled: true" \
   -d '{
     "model": "gpt-4o",
     "messages": [{"role": "user", "content": "Hi, this is a hello world test."}]

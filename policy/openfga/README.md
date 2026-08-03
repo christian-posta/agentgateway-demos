@@ -60,8 +60,42 @@ See: https://github.com/openfga/cli
 
 ## Quick Start
 
-To use the playground use the online one: `https://play.fga.dev/sandbox/?store=FooStore`
-The local one won't work well in Docker.
+### Playground / UI
+
+Use the hosted playground pointed at your local server:
+
+```
+https://play.fga.dev/sandbox/?fga_api_host=127.0.0.1:8181&fga_api_scheme=http
+```
+
+This works — it reads the local store, model, and tuples directly. CORS is open on the
+OpenFGA server (`Access-Control-Allow-Origin: *`), so the browser call goes through.
+
+**Don't use the built-in `http://localhost:3101/playground` link.** It isn't a real local
+UI — it's a one-line page that iframes the same hosted sandbox, but OpenFGA renders the
+API host from its *in-container* port (`127.0.0.1:8080`). Our compose publishes the API on
+**8181**, and host port 8080 is Keycloak in this demo, so the playground ends up querying
+the IdP for FGA stores and fails.
+
+To make the built-in link work you would have to align the in-container and published
+ports (`OPENFGA_HTTP_ADDR: 0.0.0.0:8181`, publish `8181:8181`, update the healthcheck).
+Not worth doing mid-demo — see the warning below.
+
+> ⚠️ **Never restart or recreate the OpenFGA container to fix the UI.** The datastore is
+> `memory`, so a restart wipes the store, model, and all tuples. You would have to redo
+> setup → `test-relationships.py` → re-copy `.env` → restart `policy-engine`.
+
+Terminal alternative (often reads better on a shared screen):
+
+```bash
+source .env
+fga tuple read  --store-id $OPENFGA_STORE_ID --api-url http://localhost:8181
+fga model get   --store-id $OPENFGA_STORE_ID --api-url http://localhost:8181
+
+# live check — mirrors exactly what the gateway asks
+fga query check user:mcp-user can_use model:gpt-4o        --store-id $OPENFGA_STORE_ID --api-url http://localhost:8181
+fga query check user:mcp-user can_use model:gpt-3.5-turbo --store-id $OPENFGA_STORE_ID --api-url http://localhost:8181
+```
 
 ### 1. Install Python Dependencies
 

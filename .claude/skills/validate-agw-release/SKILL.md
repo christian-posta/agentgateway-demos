@@ -208,6 +208,8 @@ Then note any FAILs with your assessment (bug, config issue, or expired credenti
   - **`/fga/openai` is NOT applied by `setup-llms.sh`** — apply it manually: `kubectl apply -f enterprise/resources/llm/openai-openfga-policy.yaml`
   - **Port conflict:** OPA (`run-opa.sh`) and OpenFGA (`docker compose`) both bind host port 8181. Run them sequentially — stop OPA (`docker stop opa-policy-engine`) before starting OpenFGA, or vice versa. The `policy-engine` (extauth for FGA) runs on port 7070; if another service (e.g. `aauth-service` from `extauth-aauth-resource`) is already on 7070, stop it first.
   - **Python for `test-relationships.py`:** Use `PYTHONPATH=$VENV_PYPATH python3.11 test-relationships.py` (see venv-selection note above). The venvs have `openfga-sdk>=0.9.7` which includes `OpenFgaClient`. The system `pip3` only has 0.1.x which lacks `OpenFgaClient` — do not use system python for this.
+  - **OpenFGA UI:** use `https://play.fga.dev/sandbox/?fga_api_host=127.0.0.1:8181&fga_api_scheme=http`. The built-in `localhost:3101/playground` link is broken by design here — it iframes the same hosted sandbox but renders the API host as the in-container `127.0.0.1:8080`, which on the host is Keycloak, not OpenFGA (published on 8181).
+  - **In-memory datastore:** `docker-compose.yaml` uses `OPENFGA_DATASTORE_ENGINE: memory`. Every `setup-openfga.sh` run mints a **new** store/model ID, and any container restart wipes all tuples. Never restart the container mid-validation — re-copy the regenerated `.env` to `extauth-policy-engine` and restart `policy-engine` whenever the store is recreated.
 - Observability: this skill intentionally does NOT run `setup-observability.sh`. If the metrics/Grafana sections of `README.md` must be validated this pass, run it manually and redo the Grafana section.
 
 ### Step 10: Teardown
@@ -241,7 +243,7 @@ kind delete cluster --name "$CLUSTER_NAME"
 
 ## Key file references
 
-- `enterprise/version.env` — chart version
+- `enterprise/version.env` — chart version **and chart registry** (`ENTERPRISE_AGW_CHART_REPO`). GA tags (e.g. `v2026.5.2`) live in the public repo `oci://us-docker.pkg.dev/solo-public/enterprise-agentgateway/charts` (the default). Dev nightlies (e.g. `v2026.5.0-beta.4-nightly-2026-05-11`) live only in `oci://us-central1-docker.pkg.dev/developers-369321/enterprise-agentgateway-dev/charts` — override the var for those. A `not found` on `helm upgrade` almost always means the tag is in the *other* registry, not an auth failure.
 - `enterprise/.env` — assumed present; **never read or audit**
 - `enterprise/example.env` — variable names for humans (optional reference)
 - `enterprise/setup-gateway.sh` — gateway + control plane + UI
