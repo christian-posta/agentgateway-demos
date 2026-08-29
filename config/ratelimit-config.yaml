@@ -1,5 +1,23 @@
 # Rate limiting configuration for AgentGateway
 # This file defines the rate limiting rules that will be applied to routes
+#
+# Token accounting on agentgateway v1.5.0 (checked, not assumed):
+#   `type: tokens` descriptors are charged `llm.totalTokens`, which 1.5 computes as
+#   input + output rather than taking the provider-reported total. Input is now
+#   cache-inclusive for providers that report cache tokens separately (anthropic,
+#   bedrock -- see cache_convention_for() upstream).
+#
+#   The thresholds below were NOT retuned, because these demo routes do not use
+#   prompt caching: measured calls report cache_read_input_tokens=0 and
+#   cache_creation_input_tokens=0, so cache-inclusive input == the old input count.
+#   Verified end to end: 3 calls to /anthropic at total_tokens=15 each incremented
+#   the redis counter by exactly 45.
+#
+#   This changes if a caching client (e.g. Claude Code, which sends cache_control
+#   aggressively) is pointed at /anthropic or /bedrock -- cache-read and cache-write
+#   tokens then count against these limits and they will trip much sooner. Raise the
+#   limits for that demo, or set AGENTGATEWAY_LEGACY_LLM_USAGE_TOKEN_SEMANTICS=true
+#   in config/.env as a temporary bridge (that flag is slated for removal after 1.5).
 
 domain: agentgateway
 

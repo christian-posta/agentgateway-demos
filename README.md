@@ -1,15 +1,19 @@
 # Agentgateway Demo
 
+Runs against **agentgateway v1.5.0** (pinned in `version.env`).
 
 ## LLM usecases
 
 * Calling multiple backend LLMs with unified (OpenAI) API
+* Serving the **native** Gemini and Anthropic APIs, not just the OpenAI-compatible shape
 * Egress controls with API key injection
 * Securing with SSO
 * Rate limit
+* API keys with per-key model allow-lists and USD/token budgets
+* Real USD cost accounting from a model cost catalog
 * Metrics collection with grafana dashboards
 * Tracing
-* Guardrails (Presidio, OpenAI, Model Armor, Bedrock, etc)
+* Guardrails (Presidio, OpenAI, Model Armor, Bedrock, etc), including over streamed responses
 * Failover
 * Policy enforcement
 * Integration with OpenFGA / OPA
@@ -23,7 +27,7 @@ The models we use in this demo:
 * OpenAI: gpt-4o 
 * Anthropic: claude-sonnet-4-5-20250929
 * Gemini: gemini-2.5-flash-lite
-* Bedrock: global.anthropic.claude-sonnet-4-20250514-v1:0
+* Bedrock: global.anthropic.claude-sonnet-4-5-20250929-v1:0
 
 ## Environment files
 
@@ -33,16 +37,82 @@ There are three `.env` files at the moment:
 `config/.env.local` -- gets loaded locally when runing agentgateawy standalone on local machine
 `enterprise/.env` -- gets convered to env vars/secrets for running in kuberentes
 
+Plus `version.env` at the repo root, which is not secret and *is* checked in — it pins the
+agentgateway version and image registry. See [Agentgateway version](#agentgateway-version).
+
+
+## Agentgateway version
+
+The agentgateway version is pinned in one place, `version.env`:
+
+```bash
+AGW_VERSION=v1.5.0
+AGW_IMAGE_REPO=cr.agentgateway.dev/agentgateway
+```
+
+The leading `v` is mandatory — tags without it (`1.5.0`) do not exist in either registry.
+`ghcr.io/agentgateway/agentgateway` publishes the same tags if you prefer it.
+
+`docker-compose.yaml` refers to this as `${AGW_IMAGE_REPO}:${AGW_VERSION}`, so **use
+`./run-compose.sh` rather than `docker compose` directly** — it passes `--env-file version.env`,
+which is what feeds compose-file interpolation. A bare `docker compose up` resolves the image to
+`:` and fails to pull.
+
+To bump versions, edit `version.env` and `./run-compose.sh up -d`. Nothing else references a version.
 
 ## Running agentgateway
 
-The configuration (./config/agentgateway_config.yaml) uses ENV variables for some values (ie, ratelimit server, ). These will need to be set ahead of time. 
+The configuration (`./config/agentgateway_config.yaml`) uses ENV variables for some values (ie,
+ratelimit server, API keys). These need to be set ahead of time. The variables to set are listed in
+`./config/example.env`; copy that to `config/.env`.
 
-The env variables to set are in the `./config/example.env` file. Copy that to a `.env` file and you can run with docker compose.
+Note `config/.env` is loaded by the compose service's `env_file:` key, which is *container*
+environment — separate from the `--env-file version.env` above, which only feeds interpolation of
+the compose file itself.
 
 ```bash
-docker compose up -d
+./run-compose.sh up -d
 ```
+
+This starts agentgateway plus everything it depends on: Keycloak (OIDC), redis + the Envoy
+ratelimit service, Prometheus, Grafana, and Jaeger. Agentgateway waits for Keycloak to report
+healthy before it starts, because every `jwtAuth` block in the config resolves its JWKS at config
+load and cannot start without the IdP reachable.
+
+Ports:
+
+| Port | What |
+|---|---|
+| 3000 | data plane — all the demo routes |
+| 4000 | the `llm:` section (API-key model access / budgets) |
+| 8080 | Keycloak |
+| 15000 | Admin API + Admin UI (host loopback only), UI at `/ui` |
+| 15020 | Prometheus metrics |
+| 15021 | readiness |
+| 3001 | Grafana |
+| 9090 | Prometheus |
+| 16686 | Jaeger |
+| 8081 | ratelimit service |
+
+### Validating config without starting anything
+
+Agentgateway 1.5 can check the config and exit:
+
+```bash
+./run-compose.sh run --rm --no-deps agentgateway -f /app/config.yaml --validate-only
+```
+
+Two caveats worth knowing:
+
+* This is not fully offline — it resolves every configured JWKS URL, so Keycloak must already be
+  up (`./run-compose.sh up -d keycloak`) or it fails on the first `jwtAuth` block.
+* Run it through `run-compose.sh`, not `docker run --env-file config/.env`. `docker run` does not
+  strip quotes from an env file, so `RATELIMIT_HOST="host.docker.internal"` interpolates *with* the
+  quotes and the YAML fails to parse. Compose's `env_file:` handling strips them.
+
+One config gotcha: variable interpolation scans the whole file **including comments**. A `$`
+followed by an uppercase name or a digit is treated as a variable reference, so writing `$0.15` in
+a comment aborts startup with `error looking key '0' up: environment variable not found`.
 
 To smoke test, you can run:
 
@@ -63,27 +133,37 @@ curl http://localhost:3000/gemini/v1/chat/completions \
 To make changes and reload, you can restart certain services:
 
 ```bash
-docker compose restart agentgateway
+./run-compose.sh restart agentgateway
 ```
 
 To see logs:
 
 ```bash
-docker compose logs -f agentgateway
+./run-compose.sh logs -f agentgateway
 ```
 
+Note the agentgateway container has **no healthcheck**. The v1.5.0 image is distroless — no
+`/bin/sh`, no `wget` — so the old `CMD-SHELL`/wget probe failed on every attempt and the container
+sat permanently unhealthy. Probe readiness from the host instead:
+
+```bash
+curl -sf http://localhost:15021/healthz/ready
+```
 
 To bring the containers down:
 
 ```bash
-docker compose stop
+./run-compose.sh stop
 ```
 
-To get rid of everything
+To get rid of everything:
 
 ```bash
-docker compose down -v
+./run-compose.sh down -v
 ```
+
+`-v` also deletes the `agw_data` volume, which holds the SQLite database backing API-key budgets
+(and the redis/Prometheus/Grafana volumes). Use plain `down` to keep budget state across a restart.
 
 
 #### Running with a local agentgateway
@@ -91,13 +171,103 @@ docker compose down -v
 You can stop the docker one:
 
 ```bash
-docker compose stop agentgateway
+./run-compose.sh stop agentgateway
 ```
 
-This will allow you to agentgateway locally (from cli) and still connect up to the infra components. 
+This will allow you to run agentgateway locally (from cli) and still connect up to the infra
+components.
 
 ```bash
 ./run-proxy-local.sh
+```
+
+That script sources `version.env` and warns if the binary on your `$PATH` is a different version.
+Install or upgrade the pinned version with:
+
+```bash
+curl -sL https://agentgateway.dev/install | bash -s -- --version v1.5.0
+```
+
+There is no brew formula and no npm package. Note `run-proxy-local.sh` reads `config/.env.local`
+(not `config/.env`), and a binary built from source reports a bare git sha rather than a tag, so the
+version warning will fire for locally-built binaries even when they are correct.
+
+## Admin UI
+
+Agentgateway 1.5 ships a real Admin UI. It is served at **[http://localhost:15000/ui](http://localhost:15000/ui)**
+— note the `/ui` path; `/` just redirects there.
+
+This needs `config.adminAddr: 0.0.0.0:15000` in `agentgateway_config.yaml`. The admin listener
+defaults to `localhost:15000`, which inside a container means *container* loopback, so the published
+port reaches nothing and you get a connection refused. Compose publishes it on host loopback
+only -- `127.0.0.1:15000:15000` **and** `[::1]:15000:15000` -- so the UI is reachable from your
+machine but not from the network.
+
+Both loopback families are required. macOS `/etc/hosts` lists `::1 localhost` ahead of
+`127.0.0.1 localhost`, so with an IPv4-only publish `http://localhost:15000` works only if the
+browser falls back to IPv4. Chrome does; Firefox may not. The symptom is confusing, because the
+Admin UI page itself renders fine and then every panel that calls the API fails:
+
+```
+Configuration API unavailable
+NetworkError when attempting to fetch resource.
+```
+
+on Costs, Analytics, Logs, and so on. `curl http://localhost:15000/api/config` from the same
+machine succeeds throughout, because curl retries on IPv4. It is not CORS -- the UI calls its
+API same-origin with relative paths (`fetch("/api/config")`) -- and it is not `adminAddr`.
+To confirm the diagnosis, compare the two families directly:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:15000/api/config   # 200
+curl -s -o /dev/null -w '%{http_code}\n' 'http://[::1]:15000/api/config'      # 200 once both are published
+docker port agentgateway-demos-agentgateway-1 15000                          # must list both
+```
+
+### The UI is read/write -- this demo pins it read-only
+
+By default the Admin UI writes back to the config file it was started with (`config.storage.mode`
+defaults to `file`, and compose mounts `config/agentgateway_config.yaml` at `/app/config.yaml`
+read-write). Every Save button, and `POST /api/config`, re-serializes the file from the parsed
+config model: **all 200+ comments in `agentgateway_config.yaml` are dropped** and a
+`# yaml-language-server:` header is injected. `Refresh base costs` behaves the same way against
+`config/model-catalog.json` -- one click replaces the curated demo catalog with the full
+models.dev dump (~930 models, 19 providers).
+
+So the config pins:
+
+```yaml
+config:
+  storage:
+    mode: readOnly
+```
+
+Writes are then refused server-side with `403 "UI is configured as read-only"`, and the UI shows a
+persistent *"Read-only mode -- editing is disabled"* banner on every page. Every read path still
+works: Costs, Analytics, Logs, Models, Providers, the CEL playground, and the chat playground.
+Note the Save / Edit / Refresh buttons are still rendered -- clicking one just 403s.
+
+`config.storage.mode` takes exactly three values (`ConfigStoreMode` in the schema):
+
+| Mode | Behavior |
+|---|---|
+| `file` (default) | UI Save rewrites the config file. Comments are lost. |
+| `hybrid` | File is a baseline; UI-managed resources overlay into `config.database`. |
+| `readOnly` | Gateway refuses UI writes. What this demo uses. |
+
+`hybrid` is narrower than it sounds and is **not** a general read/write store: `modelCatalog` is the
+only supported resource kind in 1.5.0 (`model`, `provider`, `policy`, `route`, `bind`, `apiKey` all
+return `400 unsupported config resource kind`), its file-write block is enforced only in the browser
+so `POST /api/config` still flattens the file, and it requires dropping the `modelCatalog:` file
+source. Its one real win: `Refresh base costs` then lands in the `agw_config_resources` table
+instead of overwriting `config/model-catalog.json`.
+
+Changing `storage.mode` requires a **restart**, not just a config reload -- the mode is read once at
+startup, so a hot reload leaves `/api/runtime` reporting the old value:
+
+```bash
+./run-compose.sh up -d --force-recreate agentgateway
+curl -s localhost:15000/api/runtime | jq .ui   # {"gatewayMode":"standalone","configStoreMode":"readOnly"}
 ```
 
 
@@ -117,14 +287,33 @@ pip install -r requirements.txt
 pip install --no-cache-dir -r requirements.txt
 ```
 
-You should setup a keycloak OIDC client:
+The Keycloak OIDC client this uses is already provisioned — `./run-compose.sh up -d`
+starts Keycloak and imports `config/keycloak/mcp-realm.json`, which creates:
 
-* **realm** mcp-realm
-* **name**: openweb-ui
-* **callbacks** http://localhost:9999/oauth/oidc/callback
-* **web origins** http://localhost:9999
-* **Confidential Client** with password `changeme`
-* Enable standard flow and direct access grants
+* **realm** `mcp-realm` (issuer `http://localhost:8080/realms/mcp-realm`)
+* **client** `openweb-ui` — confidential, secret `changeme`, standard flow + direct
+  access grants, callback `http://localhost:9999/oauth/oidc/callback`, web origin
+  `http://localhost:9999`
+* **realm roles** `supply-chain` (gates `/policy/openai` and the `microsoft` + `openapi`
+  MCP tool targets) and `ai-agents` (gates the `deepwiki` target)
+* **users** `mcp-user` (both roles) and `other-user` (only `ai-agents`), password `user123`
+
+Tokens carry `aud: account`, which is what every `jwtAuth` block in
+`config/agentgateway_config.yaml` validates against.
+
+**Port 8080 must be free on the host.** Everything assumes Keycloak owns `localhost:8080` — the
+`issuer` in the config, and `get-keycloak-token.sh`. If something else is bound there (a
+`kubectl port-forward ... 8080:8080`, for example) you get confusing failures: token fetch returns
+`405 Not Allowed` from the wrong service, and the gateway refuses to start with
+`failed to load JWKS: expected value at line 1 column 1` because it parsed HTML as JSON. Check with
+`lsof -nP -iTCP:8080 -sTCP:LISTEN`. The gateway's own JWKS lookup is pinned to the compose network
+(`KEYCLOAK_HOST: keycloak` in docker-compose.yaml) so it starts regardless, but token fetching from
+the host still needs the port.
+
+Keycloak runs in dev mode with an in-memory store, so the realm is re-imported clean on
+every `up` and admin-console edits do not survive a `down`. Admin console is
+[http://localhost:8080](http://localhost:8080) (`admin` / `admin`). To customize the
+realm permanently, edit `config/keycloak/mcp-realm.json`.
 
 Now you should be able to run this:
 
@@ -160,14 +349,18 @@ Fill in URLs for various providers:
 
 * API Base: `http://localhost:3000/anthropic/v1` / Auth: None / Add model: `claude-sonnet-4-5-20250929`
 * API Base: `http://localhost:3000/gemini/v1` / Auth: None / Add model: `gemini-2.5-flash-lite`
-* API Base: `http://localhost:3000/bedrock/v1` / Auth: None / Add model: `global.anthropic.claude-sonnet-4-20250514-v1:0`
+* API Base: `http://localhost:3000/bedrock/v1` / Auth: None / Add model: `global.anthropic.claude-sonnet-4-5-20250929-v1:0`
 
 Note the rate limits for each of these providers:
 
-* **OpenAi** 10 REQUESTS per minute
+* **OpenAi** 3 REQUESTS per minute
 * **Anthropic** 500 TOKENS per minute
 * **Gemini** No rate limit
 * **Bedrock** 200 TOKENS per minute
+
+Only three routes actually send descriptors (`/openai` as `requests`, `/anthropic` and `/bedrock` as
+`tokens`). `config/ratelimit-config.yaml` also defines `gemini` and `mcp` descriptors, but no route
+references them, so they are inert — the numbers there are the authority for the three that are live.
 
 ### Running OpenWebUI in Docker
 
@@ -215,6 +408,18 @@ curl http://localhost:3000/gemini/v1/chat/completions \
 {"model":"gemini-2.5-flash-lite","usage":{"prompt_tokens":11,"completion_tokens":4,"total_tokens":15},"choices":[{"message":{"content":"Hello, World!","role":"assistant"},"finish_reason":"stop","index":0}],"created":1761584454,"id":"RqX_aKxP8uOq2w-JjO6xBw","object":"chat.completion"}
 ```
 
+> **A 429 from `/gemini` is usually Google, not us.** The demo key is on the free tier, and a
+> testing run burns through it quickly. Ours returns a bare rate-limit body; Google's names the
+> metric, so read the message before blaming the ratelimit service:
+>
+> ```
+> "You exceeded your current quota ... Quota exceeded for metric:
+>  generativelanguage.googleapis.com/generate_content_free_tier_requests"
+> ```
+>
+> This takes out `/gemini`, `/a2as/gemini` and `/guardrail/gemini` together. Worth checking before a
+> live demo, since the quota resets on Google's clock, not yours.
+
 To call Anthropic:
 
 ```bash
@@ -248,13 +453,49 @@ cd config
 
 This creates a `./config/aws-creds.env` which will be imported to the ENV space in docker-compose.
 
+**After refreshing credentials you must recreate the container, not restart it.** `env_file:` is read
+only when the container is *created*, so `./run-compose.sh restart agentgateway` (and a plain
+`up -d`) keeps serving the old credentials:
+
+```bash
+./run-compose.sh up -d --force-recreate agentgateway
+```
+
+The same applies after editing `config/agentgateway_config.yaml` — a bind-mounted single file does
+not reliably trigger the config watcher on Docker Desktop, so force-recreate to be certain the
+gateway is running what is on disk. Compare `docker inspect --format '{{.State.StartedAt}}'` against
+the file's mtime if you are unsure.
+
+Two failure modes worth telling apart:
+
+```json
+{"error":{"message":"The security token included in the request is invalid"}}
+```
+Stale credentials — refresh, then **force-recreate**.
+
+```json
+{"error":{"message":"Access denied. This Model is marked by provider as Legacy and you have not been actively using the model in the last 30 days."}}
+```
+Credentials are fine; the *model* was retired. This already happened once —
+`global.anthropic.claude-sonnet-4-20250514-v1:0` went Legacy and the demo now uses
+`global.anthropic.claude-sonnet-4-5-20250929-v1:0` (which also matches the `/anthropic` route, so
+the same model is reachable through two providers). List what your account can actually reach:
+
+```bash
+aws bedrock list-inference-profiles --region us-west-2 \
+  --query "inferenceProfileSummaries[].inferenceProfileId" --output text
+```
+
+If you change it, update `config/agentgateway_config.yaml` **and** `config/model-catalog.json`, or
+cost accounting silently drops to zero for that model.
+
 For enterprise deployment, refresh the credentials in `./enterprise/update-bedrock-credentials.sh` which will put them into a .env file in that folder. 
 
 ```bash
 curl http://localhost:3000/bedrock/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "global.anthropic.claude-sonnet-4-20250514-v1:0",
+    "model": "global.anthropic.claude-sonnet-4-5-20250929-v1:0",
     "messages": [
       {
         "role": "user",
@@ -263,8 +504,150 @@ curl http://localhost:3000/bedrock/v1/chat/completions \
     ]
   }'
 
-{"model":"global.anthropic.claude-sonnet-4-20250514-v1:0","usage":{"prompt_tokens":17,"completion_tokens":30,"total_tokens":47},"choices":[{"message":{"content":"Hello! Nice to meet you. Your test worked perfectly - I received your message loud and clear. How can I help you today?","role":"assistant"},"index":0,"finish_reason":"stop"}],"id":"bedrock-1761584402445","created":1761584402,"object":"chat.completion"}  
+{"model":"global.anthropic.claude-sonnet-4-5-20250929-v1:0","usage":{"prompt_tokens":17,"completion_tokens":30,"total_tokens":47},"choices":[{"message":{"content":"Hello! Nice to meet you. Your test worked perfectly - I received your message loud and clear. How can I help you today?","role":"assistant"},"index":0,"finish_reason":"stop"}],"id":"bedrock-1761584402445","created":1761584402,"object":"chat.completion"}  
 ```
+
+## Native provider APIs
+
+The routes above all speak the OpenAI shape. Agentgateway 1.5 can also serve providers' **native**
+APIs, so an unmodified vendor SDK can point at the gateway.
+
+### Native Gemini on `/gemini`
+
+```bash
+curl -X POST 'http://localhost:3000/gemini/v1beta/models/gemini-2.5-flash-lite:generateContent' \
+  -H "Content-Type: application/json" \
+  -d '{"contents":[{"parts":[{"text":"Say OK."}]}]}'
+
+{"candidates":[{"content":{"role":"model","parts":[{"text":"OK."}]},"finishReason":"STOP","index":0}],"usageMetadata":{"promptTokenCount":3,"candidatesTokenCount":2,"totalTokenCount":5},"modelVersion":"gemini-2.5-flash-lite"}
+```
+
+A genuine Gemini-shaped response — `candidates`, `usageMetadata`, `modelVersion` — from the same
+route that serves `/gemini/v1/chat/completions`. Demo beat: point a raw `google-genai` client at it.
+
+### Anthropic Messages API served by OpenAI (`/compat/anthropic`)
+
+```bash
+curl http://localhost:3000/compat/anthropic/v1/messages \
+  -H "Content-Type: application/json" -H "anthropic-version: 2023-06-01" \
+  -d '{"model":"gpt-4o-mini","max_tokens":64,
+       "system":[{"type":"text","text":"You are terse."}],
+       "messages":[{"role":"user","content":"Say OK."}]}'
+
+{"id":"chatcmpl-...","type":"message","role":"assistant","content":[{"type":"text","text":"OK."}],"model":"gpt-4o-mini-2024-07-18","stop_reason":"end_turn","usage":{"input_tokens":18,"output_tokens":2}}
+```
+
+The client speaks Anthropic; the tokens are bought from OpenAI. Note `model` is
+`gpt-4o-mini-2024-07-18` and the Anthropic-only `system` block was genuinely parsed (18 input
+tokens vs 10 without it). Demo beat: point the Anthropic SDK — or Claude Code — at an OpenAI backend.
+
+### Why these need explicit `ai.routes`
+
+This is the one non-obvious part, and it bites silently. An inline `ai:` backend under `binds:` does
+**not** inherit agentgateway's built-in path→route-type map. With no `routes:` block, *every* path on
+that route resolves to `completions`:
+
+```yaml
+ai:
+  routes:
+    "/v1/chat/completions": completions
+    ":generateContent": generateContent
+    ":streamGenerateContent": generateContent
+    ":countTokens": geminiCountTokens
+    "*": passthrough
+```
+
+Suffixes match with `ends_with`, longest first, `*` last. The model comes from the
+`models/{model}:...` path segment, so no per-model config is needed.
+
+Before this was added, `POST /anthropic/v1/messages` returned an OpenAI `chat.completion` object and
+silently dropped the Anthropic-only fields — it looked like it worked.
+
+These routes have an explicit `routes:` block: `/openai`, `/policy/openai`, `/keyed/openai`,
+`/compat/anthropic`, `/opa/openai`, `/fga/openai`, `/gemini`.
+
+These do not, and so are OpenAI-compatible endpoints only: `/anthropic`, `/bedrock`,
+`/failover/openai`, `/guardrail/gemini`, `/guardrail/bedrock`, `/a2as/gemini`. Adding native-API
+support to any of them is just a `routes:` block away.
+
+## API keys, model access, and budgets
+
+Two separate mechanisms, on two different ports, because they are enforced in different places.
+
+### Budgets — `/keyed/openai` on :3000
+
+```bash
+# a valid key is required (apiKey mode: strict)
+curl http://localhost:3000/keyed/openai/v1/chat/completions \
+  -H "Authorization: Bearer agw_sk_demo" -H "Content-Type: application/json" \
+  -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"hi"}]}'
+```
+
+No key or a bad key returns **401**. Two keys are configured:
+
+| Key | Budget |
+|---|---|
+| `agw_sk_demo` | 0.005 USD / 24h |
+| `agw_sk_cheap` | 50 tokens / 1h |
+
+Hammer the cheap one and it blocks after ~5 calls:
+
+```bash
+for i in $(seq 1 8); do
+  curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/keyed/openai/v1/chat/completions \
+    -H "Authorization: Bearer agw_sk_cheap" -H "Content-Type: application/json" \
+    -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"hi"}]}'
+done
+```
+
+```
+200 200 200 200 200 429
+```
+
+(Five succeed because the budget is charged *after* each response, so the call that pushes usage past
+the limit still gets served; the next one is blocked. Exact counts depend on how much of the current
+window is already spent — the window is epoch-aligned, so it resets on the UTC hour, not an hour
+after your first call.)
+
+```json
+{"error":{"message":"Budget exceeded","type":"rate_limit_error","code":"budget_exceeded"}}
+```
+
+with a `retry-after` header. Points worth making live:
+
+* Budgets are **per key** — `agw_sk_demo` keeps working while `agw_sk_cheap` is blocked.
+* Windows are aligned to the **Unix epoch**, not to the first request: `24h` starts at midnight UTC,
+  `1h` follows UTC clock hours. So `retry-after` counts down to the end of the current hour.
+* State is **persistent**. It lives in SQLite on the `agw_data` volume, so it survives
+  `./run-compose.sh restart agentgateway`. This requires `config.database`; API-key budgets refuse
+  to start without it.
+* A USD budget can only be charged when the model can be priced, so it depends on the model catalog
+  below.
+* `onBudgetExceeded: Audit` records the overage but still serves the request, instead of `Block`.
+
+### Model access — :4000
+
+```bash
+# /v1/models is filtered per key: each key only discovers what it may call
+curl http://localhost:4000/v1/models -H "Authorization: Bearer agw_sk_small"   # -> ["cheap"]
+curl http://localhost:4000/v1/models -H "Authorization: Bearer agw_sk_all"     # -> ["cheap","smart"]
+
+# and enforced, not just hidden
+curl http://localhost:4000/v1/chat/completions \
+  -H "Authorization: Bearer agw_sk_small" -H "Content-Type: application/json" \
+  -d '{"model":"smart","messages":[{"role":"user","content":"hi"}]}'
+
+{"error":{"message":"Model is not allowed for this API key","type":"invalid_request_error","code":"model_not_allowed"}}
+```
+
+**Why a separate port:** `allowedModels` is enforced in `ModelRouter::resolve`, which only runs for
+models declared in the top-level `llm:` section. On an inline `ai:` backend under `binds:` the field
+parses fine and is **silently ignored** — a key could still request any model. Budgets are a normal
+route policy and do apply to inline backends. Same architectural split as `ai.routes` above: the
+model-router path and the inline-backend path are different code, and features do not automatically
+apply to both.
+
+Omitting `allowedModels` means no constraint; an **empty list** means deny everything.
 
 ## Securing with SSO
 
@@ -296,11 +679,10 @@ authorization failed%
 
 This because we need to pass an SSO token for this to work. 
 
-NOTE: you will need the right client_secret for this to work and export it as 
-
-```bash
-export CLIENT_SECRET=""
-```
+The Keycloak that issues these tokens runs as part of `./run-compose.sh up -d` and
+imports `config/keycloak/mcp-realm.json` on boot, so `get-keycloak-token.sh` works with
+no extra setup — the client secret it defaults to (`changeme`) is the one in the realm.
+Override with `export CLIENT_SECRET=...` only if you point it at a different Keycloak.
 
 ```bash
 TOKEN=$(./get-keycloak-token.sh)
@@ -416,6 +798,26 @@ curl -v http://localhost:3000/anthropic/v1/chat/completions \
 
 After the response, try again, and you should see 429
 
+### Token accounting on 1.5
+
+`type: tokens` descriptors are charged `llm.totalTokens`, which 1.5 computes as input + output
+rather than taking the provider-reported total. Input is now **cache-inclusive** for providers that
+report cache tokens separately (Anthropic, Bedrock).
+
+The thresholds in `config/ratelimit-config.yaml` were **not** retuned for the upgrade, because these
+routes don't use prompt caching — measured calls report `cache_read_input_tokens=0` and
+`cache_creation_input_tokens=0`, so cache-inclusive input equals the old count. Verified end to end:
+three calls to `/anthropic` at `total_tokens=15` each incremented the redis counter by exactly 45.
+
+This changes the moment a **caching client** is pointed at `/anthropic` or `/bedrock` — Claude Code,
+for instance, sends `cache_control` aggressively. Cache-read and cache-write tokens then count
+against these limits and they trip much sooner. Either raise the limits for that demo or set
+`AGENTGATEWAY_LEGACY_LLM_USAGE_TOKEN_SEMANTICS=true` in `config/.env` as a bridge — that flag is
+slated for removal after 1.5.
+
+Also note `/anthropic` has `tokenize: true`, so the limit is checked against an *estimate* before the
+request goes upstream. A single large prompt can 429 on its own without ever reaching Anthropic.
+
 
 ## Metrics / Grafana / Cost
 
@@ -439,6 +841,49 @@ Grafana is exposed on `http://localhost:3001/`
 The cost dashboard shows breakdown of model usage, pricing. This can be broken down by team, user, organiziation, anything you want. 
 
 ![Model Cost Dashboard](./images/cost.png)
+
+### Real USD cost (1.5)
+
+Cost is now computed **by the gateway**, not estimated in PromQL. Agentgateway 1.5 adds a native
+counter:
+
+```bash
+curl -s localhost:15020/metrics | grep gen_ai_client_cost_usd_total
+```
+
+```
+agentgateway_gen_ai_client_cost_usd_total{gen_ai_system="gcp.gemini",...,route="default/gemini",...} 0.0000011
+agentgateway_gen_ai_client_cost_usd_total{gen_ai_system="openai",...,route="default/compat-anthropic",...} 0.0000039
+```
+
+Prices come from **`config/model-catalog.json`** (`config.modelCatalog`), because agentgateway's
+built-in catalog is **empty** — without an explicit catalog, `llm.cost` is never set and this counter
+stays at zero. Rates are USD per 1M tokens, and the file is hot-reloaded.
+
+The cost dashboard was rewritten to read this counter. Previously each panel multiplied token counts
+by prices hardcoded in the PromQL, which drifted from real pricing and ignored cache-read/cache-write
+tokens entirely.
+
+**When adding a model to the catalog**, match the provider-reported *response* model exactly — lookup
+is an exact map match with no prefix or wildcard fallback. `/openai` requests for `gpt-4o` come back
+as `gpt-4o-2024-08-06`, so both are listed. Provider keys are agentgateway's own ids, not vendor
+branding: `openai`, `anthropic`, `aws.bedrock`, `gcp.gemini`, `gcp.vertex_ai`, `azure`.
+
+Diagnose misses with:
+
+```bash
+curl -s localhost:15020/metrics | grep cost_catalog_lookups
+```
+
+`status="Exact"` is priced; `status="Missing"` means traffic arrived for a model not in the catalog.
+The dashboard has a "Cost Catalog Health" panel for exactly this, so unpriced traffic shows up
+instead of silently reading zero.
+
+Cost is also available as a log field (`cost_usd: 'llm.cost.total'`, already configured). Note it
+renders as `0` for very small amounts — a sub-microdollar request logs `0`, while a 12k-token gpt-4o
+request logs `0.0300425`. Do **not** add cost to `config.metrics.fields.add`: entries there become
+metric *labels*, not values, so it reads `unknown` and mints a new time series per distinct dollar
+amount.
 
 And you can also get operational / usage information from the metrics:
 
@@ -484,6 +929,34 @@ You can see metrics and traces from this UI.
 
 
 ## Failover:
+
+> **Changed on v1.5.0 — needs a `health` policy, and now fails over on the FIRST call.**
+>
+> On alpha.4 this route failed over with no health configuration. On 1.5 it does not, unless the
+> primary provider carries an explicit `health` policy:
+>
+> ```yaml
+> policies:
+>   health:
+>     unhealthyExpression: 'response.code == 429'   # note response.code, not .status
+>     eviction:
+>       duration: 10s
+> ```
+>
+> **Why:** priority-group failover picks the first bucket with healthy endpoints, so something has to
+> mark the primary unhealthy. With `health` unset, only **5xx** responses and connection failures
+> count — and the stub returns **429**, which is 4xx. So the primary stayed healthy forever and the
+> secondary was never tried. Verified by removing just that block: three calls, three 429s, no
+> failover. With it: failover works.
+>
+> **The demo script below is now out of date in your favour.** It says the first request fails and
+> the *second* one fails over. On 1.5 with the `health` policy, the retry evicts the primary and
+> falls over to the secondary **within the same request** — the very first call returns
+> `gpt-4o-2024-08-06`. There is no longer a "call it twice" step. Adjust the live demo accordingly:
+> the point to make is that the client made one request, never saw the 429, and silently got served
+> by a different model.
+>
+> Eviction lasts `10s`, after which the primary is retried and 429s again, so the demo is repeatable.
 
 Failover is implemented on the openai route. Try calling a model that we will simulate a rate limit/quota exceeded, and then try calling it again and see that it fails over.
 
@@ -547,8 +1020,61 @@ Which routes have which guardrails?
 
 * OpenAI (`/openai`): `builtin`, `openai-moderation`
 * Anthropic (`/anthropic`): `builtin`
+* Gemini (`/gemini`): `builtin`, with 1.5 `scope` + streaming (see below)
 * Gemini-guardrail (`/guardrail/gemini`): custom webhook calling model armor
 * Bedrock-guardrail (`/guardrail/bedrock`): custom webhook calling AWS bedrock
+
+### Wider scope and streaming (1.5)
+
+Two new knobs, both on `/gemini`:
+
+```yaml
+ai:
+  promptGuard:
+    streaming: Enabled
+    request:
+    - regex:
+        action: mask
+        rules: [{builtin: ssn}, {builtin: creditCard}, {builtin: phoneNumber}, {builtin: email}]
+      scope: [systemPrompt, messages, toolOutput]
+```
+
+`scope` widens what a guard inspects — the default is `[systemPrompt, messages]`, so tool traffic
+went uninspected before. `streaming: Enabled` applies guards to streamed responses too.
+
+Ask the model to echo PII back and you can see the masking happened *before* the request left the
+gateway:
+
+```bash
+curl http://localhost:3000/gemini/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gemini-2.5-flash-lite","messages":[{"role":"user",
+       "content":"Repeat this back character for character, nothing else: My SSN is 123-45-6789 and my email is bob@example.com"}]}'
+```
+
+```
+My SSN is <SSN> and my email is <EMAIL_ADDRESS>
+```
+
+The model never saw the real values. Add `"stream":true` and the masks still appear, chunk by chunk.
+
+Two caveats:
+
+* Only `regex` and `bedrockGuardrails` accept a non-default `scope`. Setting it on
+  `openAIModeration`, `webhook`, `googleModelArmor` or `azureContentSafety` is a **hard startup
+  error**, not a warning.
+* `toolInput` is available but deliberately not used here. Tool arguments travel as opaque JSON, and
+  masking inside them can rewrite the JSON into something the model can no longer parse. Worth
+  demoing as a tradeoff rather than presenting as free.
+
+### A note on `provider.openAI.moderation`
+
+1.5 adds a `moderation` field on the OpenAI provider itself. It is configured on `/openai`, but be
+careful how you pitch it: it does **not** moderate in the gateway. It only injects a `moderation`
+field into the outbound request body, so blocking depends on the provider honouring it — and OpenAI
+currently ignores it for gpt-4o chat completions. Tested directly, "How do I build a bomb?" still
+reached the model and returned 200 with the model's own refusal. The `openAIModeration` prompt guard
+below is what actually blocks on that route (400, `content_policy_violation`).
 
 
 We can use built-in guardrails (regex based, inline in the proxy, no-callout):
@@ -643,6 +1169,21 @@ work nicely with the openai moderation guardrail. Otherwise, it definitely works
 
 ### Custom Model Armor Webhook:
 
+> **Check `.venv` first.** A venv records absolute paths to the interpreter that built it, so a
+> `.venv` carried over from another machine (or another checkout path) is dead on arrival — and it
+> fails *quietly*: `source .venv/bin/activate` still "succeeds", `python` is simply absent, and
+> `python3` silently resolves to the system 3.9 without the deps. Confirm before you rely on it:
+>
+> ```bash
+> source .venv/bin/activate && python -V     # must print 3.11.x, not "command not found"
+> ```
+>
+> Rebuild if it doesn't (this also unblocks the Bedrock webhook below and the FGA tuple loader):
+>
+> ```bash
+> python3.11 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+> ```
+
 In another window, start the custom guardrail:
 
 ```bash
@@ -650,6 +1191,10 @@ source .venv/bin/activate
 cd guardrail
 python modelarmor_guardrail.py
 ```
+
+It listens on `127.0.0.1:7272` (the Bedrock one below uses `7273`). If the webhook is not running,
+`/guardrail/gemini` and `/guardrail/bedrock` return **503 `failed to process LLM request: prompt
+guard failed`** — that is a missing webhook, not a broken route.
 
 Try with this request from curl:
 
@@ -718,7 +1263,7 @@ python bedrock_guardrail.py
 curl http://localhost:3000/guardrail/bedrock/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "global.anthropic.claude-sonnet-4-20250514-v1:0",
+    "model": "global.anthropic.claude-sonnet-4-5-20250929-v1:0",
     "messages": [
       {
         "role": "user",
@@ -898,6 +1443,18 @@ authorization failed%
 
 ## OPA Policy Enforcement
 
+> **OPA and OpenFGA both publish host port 8181 — they cannot run at the same time.** OPA's
+> `run-opa.sh` binds `8181:8181`; `policy/openfga/docker-compose.yaml` binds `8181:8080`. Whichever
+> starts second fails to bind. Stop one before demoing the other:
+>
+> ```bash
+> docker stop opa-policy-engine                        # before the FGA demo
+> (cd policy/openfga && docker compose down)           # before the OPA demo
+> ```
+>
+> Note the OpenFGA store is in-memory, so taking it down means redoing `setup-openfga.sh` →
+> `test-relationships.py` → copy `.env` → restart `policy-engine`.
+
 You will need to start the OPA ext_auth server:
 
 ```bash
@@ -1038,7 +1595,17 @@ curl -X POST http://localhost:3000/opa/openai/v1/chat/completions \
 
 ## FGA Policy Enforcement
 
-See the `./policy/openfga/README.md` for setup.
+See the `./policy/openfga/README.md` for setup. Two things that will stop you cold:
+
+* **Port 8181 collides with OPA** — see the box under *OPA Policy Enforcement* above. Stop the OPA
+  container first.
+* **The ext_authz engine is a separate repo**, not vendored here:
+  `~/go/src/github.com/christian-posta/extauth-policy-engine` on branch `ceposta-extauth-fga`. It
+  must be running on **:7070** (the route reads `EXT_AUTHZ_HOST`, which compose sets to
+  `host.docker.internal`), and its `.env` must carry the store/model IDs from *this* OpenFGA run.
+  The store is in-memory, so those IDs change every time the container restarts — a stale `.env`
+  gives denials that look like policy decisions. Confirm at startup: the engine prints the store and
+  model ID it loaded.
 
 To show the relationships in a UI while demoing, open the hosted playground pointed at the
 local OpenFGA server (the built-in `localhost:3101/playground` link does **not** work — see
@@ -1136,11 +1703,25 @@ curl http://localhost:3000/a2as/gemini/v1/chat/completions \
 
 ## To try the tool poisoning demo
 
-Go to `./prompt-injection-mcp` and run the local echo MCP server. It will run on port `8282`, but we will proxy it through agentgateway on `http://localhost:3000/mcp/echo`
+Go to `./prompt-injection-mcp` and run the local echo MCP server. It will run on port `8282`, but we will proxy it through agentgateway on `http://localhost:3000/echo/mcp`
 
 ```bash
 cd ./prompt-injection-mcp
 ./run-mcp.sh
+```
+
+**On an Intel (x86_64) Mac this pull fails** — `ceposta/prompt-injection-mcp:0.1.0` is published
+**arm64-only**:
+
+```
+no matching manifest for linux/amd64 in the manifest list entries
+```
+
+The Dockerfile is right there, so build it locally for your own arch first, then `./run-mcp.sh`
+picks up the local image:
+
+```bash
+cd ./prompt-injection-mcp && docker build -t ceposta/prompt-injection-mcp:0.1.0 .
 ```
 
 Go to your Agent (ie, OpenWebUI)
@@ -1163,10 +1744,23 @@ We can do a lot to virtualize and protect/govern MCP tools.
 
 We have the `/public/mcp` route set up to virtualize the following MCP servers:
 
-* **OpenAPI**: automatically convert an OpenAPI API to MCP tools
+* **OpenAPI**: automatically convert an OpenAPI API to MCP tools — the Swagger Petstore, vendored at
+  `config/openapi/petstore.json`, exposed as 19 `openapi_*` tools
 * **DeepWiki**: docs and diagrams for public GitHub repos https://docs.devin.ai/work-with-devin/deepwiki
 * **Microsoft Docs**: docs for microsoft projects
 * **Exa AI**: AI powered search engine
+
+The OpenAPI target used to produce no tools at all: `docker-compose.yaml` mounted
+`./resources/openapi/petstore.json`, a path that did not exist in the repo, so Docker silently
+created an empty directory there. The spec is now checked in, which keeps the demo offline-safe
+(`schema: {url: ...}` also works if you'd rather fetch it).
+
+Quick check without the inspector UI:
+
+```bash
+npx @modelcontextprotocol/inspector --cli http://localhost:3000/public/mcp \
+  --transport http --method tools/list
+```
 
 If you start the agentgateway, then go to mcp-inspector, type in the following:
 

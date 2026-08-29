@@ -1,0 +1,90 @@
+{
+  "realm": "mcp-realm",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "accessTokenLifespan": 3600,
+  "ssoSessionIdleTimeout": 7200,
+  "ssoSessionMaxLifespan": 36000,
+  "roles": {
+    "realm": [
+      {
+        "name": "supply-chain",
+        "description": "Grants access to the supply-chain LLM route (/policy/openai) and the microsoft + openapi MCP tool targets on /mcp."
+      },
+      {
+        "name": "ai-agents",
+        "description": "Grants access to the deepwiki MCP tool target on /mcp."
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "openweb-ui",
+      "name": "OpenWebUI",
+      "description": "Confidential client used by OpenWebUI SSO and by get-keycloak-token.sh (ROPC).",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "changeme",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": true,
+      "redirectUris": [
+        "http://localhost:9999/oauth/oidc/callback",
+        "http://localhost:9999/*"
+      ],
+      "webOrigins": [
+        "http://localhost:9999"
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost:9999/*"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "mcp-user",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "MCP",
+      "lastName": "User",
+      "email": "user@mcp.example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "user123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-mcp-realm",
+        "supply-chain",
+        "ai-agents"
+      ]
+    },
+    {
+      "username": "other-user",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Other",
+      "lastName": "User",
+      "email": "other@mcp.example.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "user123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-mcp-realm",
+        "ai-agents"
+      ]
+    }
+  ]
+}

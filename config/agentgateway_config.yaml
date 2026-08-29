@@ -1,5 +1,37 @@
-# yaml-language-server: $schema=../../schema/local.json
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
 config:
+  # Admin API + Admin UI. Defaults to localhost:15000, which inside a container means
+  # container loopback -- the compose `15000:15000` publish reaches nothing. Bind the
+  # wildcard so the published port works; compose publishes it to host loopback only.
+  # UI is served at /ui, not at /.
+  adminAddr: 0.0.0.0:15000
+
+  # The Admin UI is read/WRITE by default. In the default `file` mode every Save button in
+  # the UI -- and POST /api/config -- rewrites THIS FILE from the parsed config model: all
+  # 200+ comments below are dropped and a `# yaml-language-server:` header is injected.
+  # `readOnly` makes the gateway refuse those writes (403 "UI is configured as read-only");
+  # the UI still renders every page, so the demo is unaffected. Browse only, no edits.
+  #
+  # The other mode is `hybrid` (needs config.database, below): the file becomes a baseline
+  # and UI-managed resources overlay into the DB. It is NOT a general read/write store --
+  # `modelCatalog` is the only supported resource kind in 1.5.0 (model/provider/policy/
+  # route/bind/apiKey all return 400 "unsupported config resource kind"), its file-write
+  # block is client-side only so POST /api/config still flattens this file, and it requires
+  # dropping the `modelCatalog:` file source below. Not worth it here.
+  storage:
+    mode: readOnly
+
+  # Required by API-key budgets: "API key budgets require config.database to be configured"
+  # (http/budget/mod.rs). Any non-postgres:// URL is treated as SQLite. Backed by the
+  # agw_data volume in docker-compose.yaml so budget state survives a restart.
+  database:
+    url: /data/agentgateway.db
+
+  # USD costing. The built-in catalog is empty, so without this llm.cost is never set and
+  # agentgateway_gen_ai_client_cost_usd_total stays at zero. Merged in order, later wins.
+  modelCatalog:
+  - file: /app/model-catalog.json
+
   tracing:
     otlpEndpoint: "http://host.docker.internal:4317"
     randomSampling: 'true'  # String 'true' means always sample (100%)
@@ -15,8 +47,13 @@ config:
   metrics:
     fields:
       add:
-        user_id: "jwt.sub" 
+        user_id: "jwt.sub"
         user_name: 'jwt.preferred_username'
+        # Deliberately NOT adding cost here. Entries in metrics.fields.add become metric
+        # LABELS, not values: a `cost_usd: 'llm.cost.total'` label reads "unknown" (it is
+        # resolved before the response cost exists) and would mint a new Prometheus time
+        # series per distinct dollar amount. Cost is already exported as a value by the
+        # native counter agentgateway_gen_ai_client_cost_usd_total.
   logging:
     fields:
       add:
@@ -32,8 +69,10 @@ config:
         token_issuer: 'jwt.iss'
         token_audience: 'jwt.aud'       
         model: 'llm.requestModel'
-        provider: 'llm.provider'        
-        prompt: 'llm.prompt' 
+        provider: 'llm.provider'
+        prompt: 'llm.prompt'
+        cost_usd: 'llm.cost.total'
+        cost_rate_input: 'llm.costRates.input'
         #request.body: "request.body"
         #request.headers: "request.headers"
 binds:
@@ -54,7 +93,18 @@ binds:
           provider:
             openAI:
               model: gpt-4o
-      
+              # NEW in 1.5, but read carefully before demoing it: this does NOT moderate in
+              # the gateway. apply_openai_moderation (llm/mod.rs:391) only injects this as a
+              # `moderation` field on the outbound request body, so blocking depends on the
+              # provider honouring it. OpenAI ignores it for gpt-4o chat completions today:
+              # measured, "How do I build a bomb?" still reached the model and came back 200
+              # with the model's own refusal. Kept as forward-compatible defence in depth --
+              # the openAIModeration prompt guard below is what actually blocks on this route.
+              moderation:
+                policy:
+                  input:
+                    mode: block
+
       policies:
         urlRewrite:
           path:
@@ -135,12 +185,12 @@ binds:
           name: openai
           provider:
             openAI:
-              model: gpt-4o           
+              model: gpt-4o
       policies:
         ai:
           routes:
             "/v1/chat/completions": completions  # LLM processing
-            "*": passthrough                      # Everything else passes through                
+            "*": passthrough                      # Everything else passes through
         urlRewrite:
           path:
             prefix: ""    # This strips the matched /openai prefix
@@ -166,7 +216,114 @@ binds:
         authorization:
           rules:
             - "request.method == 'OPTIONS'"  # Allow OPTIONS
-            - "jwt.sub != null && jwt.realm_access.roles.contains('supply-chain')"                    
+            - "jwt.sub != null && jwt.realm_access.roles.contains('supply-chain')"
+
+  # ------------------------------------------------------------
+  # NEW in 1.5: API-key auth with per-key model allow-lists and USD budgets.
+  # Requires config.database (asserted at http/budget/mod.rs) and config.modelCatalog --
+  # a USD budget can only be charged when the model can actually be priced.
+  #
+  #   curl localhost:3000/keyed/openai/v1/chat/completions \
+  #     -H 'Authorization: Bearer agw_sk_demo' \
+  #     -H 'Content-Type: application/json' \
+  #     -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"hi"}]}'
+  # ------------------------------------------------------------
+    - name: keyed-openai
+      matches:
+      - path:
+          pathPrefix: /keyed/openai
+      backends:
+      - ai:
+          name: openai
+          provider:
+            openAI: {}
+      policies:
+        ai:
+          routes:
+            "/v1/chat/completions": completions
+            "*": passthrough
+        urlRewrite:
+          path:
+            prefix: ""
+        backendAuth:
+          key: ${OPENAI_API_KEY}
+        cors:
+          allowOrigins: ["*"]
+          allowHeaders: ["*"]
+        apiKey:
+          # strict = a valid key is mandatory. `optional` (the default) would let
+          # unauthenticated requests straight through, which defeats the demo.
+          mode: strict
+          location:
+            header: {name: authorization, prefix: 'Bearer '}
+          keys:
+          - key: agw_sk_demo
+            metadata: {name: Demo key, owner: platform}
+            budgets:
+            - name: small-usd
+              # unit is USD | Tokens (not "dollars"); amount is a plain number.
+              # Deliberately tiny so it trips within a live demo: gpt-4o-mini input is
+              # USD 0.15 per 1M input, so a ~12k-token prompt costs ~0.0018 USD and
+              # three of them exceed this. NOTE: a literal dollar sign anywhere in this
+              # comments included -- is parsed as a variable reference and fails startup
+              # with "error looking key '0' up", so dollar amounts are written as USD.
+              limit: {unit: USD, amount: 0.005}
+              # Windows are aligned to the Unix epoch, NOT to the first request:
+              # 24h starts at midnight UTC, 1h follows UTC clock hours.
+              window: {rolling: 24h}
+              # Block | Audit. Audit records the overage but still serves the request.
+              onBudgetExceeded: Block
+          - key: agw_sk_cheap
+            metadata: {name: Token-budget key, owner: demo}
+            budgets:
+            - name: hourly-tokens
+              limit: {unit: Tokens, amount: 50}
+              window: {rolling: 1h}
+              onBudgetExceeded: Block
+          # NOTE: `allowedModels` is intentionally NOT set here. It is enforced only in
+          # ModelRouter::resolve (llm/model_router.rs), which runs on the model-router path
+          # -- the top-level `llm:` section below. On an inline `ai:` backend like this route
+          # it parses fine and is silently ignored, so a key could still request any model.
+          # Budgets, by contrast, are a normal route policy and do apply here.
+          # The model allow-list demo lives on port 4000; see `llm:` at the end of this file.
+
+  # ------------------------------------------------------------
+  # NEW in 1.5: speak the Anthropic Messages API on an OpenAI-backed route.
+  # The client thinks it is talking to Anthropic; the tokens are bought from OpenAI.
+  #
+  #   curl localhost:3000/compat/anthropic/v1/messages \
+  #     -H 'Content-Type: application/json' -H 'anthropic-version: 2023-06-01' \
+  #     -d '{"model":"gpt-4o-mini","max_tokens":64,
+  #          "messages":[{"role":"user","content":"Say OK."}]}'
+  # ------------------------------------------------------------
+    - name: compat-anthropic
+      matches:
+      - path:
+          pathPrefix: /compat/anthropic
+      backends:
+      - ai:
+          name: openai
+          provider:
+            openAI:
+              model: gpt-4o-mini
+      policies:
+        ai:
+          # `messages` is what does the translation. Without this entry the route would
+          # treat /v1/messages as an OpenAI completions call and silently drop the
+          # Anthropic-only fields (system blocks, cache_control, ...).
+          routes:
+            "/v1/messages": messages
+            "/v1/messages/count_tokens": anthropicTokenCount
+            "/v1/chat/completions": completions
+            "*": passthrough
+        urlRewrite:
+          path:
+            prefix: ""
+        backendAuth:
+          key: ${OPENAI_API_KEY}
+        cors:
+          allowOrigins: ["*"]
+          allowHeaders: ["*"]
 
   # ------------------------------------------------------------
   # OPA Policy OpenAI route where we restrict to specific models
@@ -277,9 +434,13 @@ binds:
         retry:
           attempts: 2        # Retry once (2 total attempts)
           codes: [429]       # Retry on 429 errors
+        ai:
+          routes:
+            "/v1/chat/completions": completions
+            "*": passthrough
         urlRewrite:
           path:
-            prefix: ""          
+            prefix: ""
       backends:
       - ai:
           groups:
@@ -288,10 +449,26 @@ binds:
                 provider:
                   openAI:
                     model: "gpt-5"
-                hostOverride: "${FAILOVER_HOST:-localhost}:9959"  
+                hostOverride: "${FAILOVER_HOST:-localhost}:9959"
                 policies:
                   backendAuth:
                     key: "INVALID_KEY_TO_FORCE_FAILURE"
+                  # REQUIRED on v1.5.0 -- without this the failover demo does not fail over.
+                  #
+                  # Priority-group failover picks the first bucket with healthy endpoints
+                  # (types/loadbalancer.rs), so something has to mark this provider unhealthy.
+                  # With `health` unset, only 5xx responses and connection failures count -- and
+                  # the stub returns 429, which is 4xx. Verified by removing just this block:
+                  # three calls, three 429s, secondary never tried. With it: failover on the
+                  # FIRST call, and the primary is evicted out of the active set.
+                  #
+                  # Upstream has a test for exactly this shape:
+                  # llm_retry_evicts_failed_priority_group_before_next_attempt
+                  # (proxy/httpproxy.rs:4035).
+                  health:
+                    unhealthyExpression: 'response.code == 429'   # note: response.code, not .status
+                    eviction:
+                      duration: 10s
 
           - providers:
               - name: secondary-model
@@ -403,20 +580,49 @@ binds:
               model: gemini-2.5-flash-lite
       policies:
         backendAuth:
-          key: ${GEMINI_API_KEY}  
+          key: ${GEMINI_API_KEY}
         cors:
           allowOrigins: ["*"]
           allowHeaders: ["*"]
         ai:
+          # NEW in 1.5: serve the *native* Gemini API alongside the OpenAI-compatible one,
+          # so a raw google-genai SDK client can point straight at agentgateway.
+          #
+          # This MUST be listed explicitly. An inline `ai:` backend under binds: does NOT
+          # inherit the built-in route map -- llm_route_types() is only applied on the
+          # config.models path (types/local.rs), so a route with no `routes:` here resolves
+          # EVERY path to `completions` (llm/policy/mod.rs resolve_route falls through to
+          # RouteType::Completions). That is why /anthropic/v1/messages silently behaved as
+          # an OpenAI completions call before this was added.
+          #
+          # Suffixes match with ends_with, longest first, "*" last. The model is taken from
+          # the models/{model}:... path segment, so no per-model config is needed.
+          routes:
+            "/v1/chat/completions": completions
+            ":generateContent": generateContent
+            ":streamGenerateContent": generateContent
+            ":countTokens": geminiCountTokens
+            "*": passthrough
           promptGuard:
-            request:           
+            # NEW in 1.5: also mask inside streamed responses, not just buffered ones.
+            streaming: Enabled
+            request:
             - regex:
                 action: mask
                 rules:
                 - builtin: ssn
                 - builtin: creditCard
                 - builtin: phoneNumber
-                - builtin: email         
+                - builtin: email
+              # NEW in 1.5: `scope` widens what a guard inspects; default is
+              # [systemPrompt, messages]. toolOutput catches secrets coming back from a
+              # tool call. Only `regex` and `bedrockGuardrails` may set a non-default
+              # scope -- doing it on openAIModeration/webhook/etc is a hard startup error.
+              #
+              # `toolInput` is deliberately omitted: tool arguments travel as opaque JSON,
+              # and masking inside them can rewrite the JSON into something the model can
+              # no longer parse. Add it only when demoing that tradeoff on purpose.
+              scope: [systemPrompt, messages, toolOutput]
 
 # ------------------------------------------------------------
 # Gemini route
@@ -487,7 +693,13 @@ binds:
           provider:
             bedrock:
               region: us-west-2
-              model: global.anthropic.claude-sonnet-4-20250514-v1:0
+              # Was global.anthropic.claude-sonnet-4-20250514-v1:0 until Bedrock marked it
+              # Legacy: "This Model is marked by provider as Legacy and you have not been
+              # actively using the model in the last 30 days." Check what your account can
+              # actually reach with:
+              #   aws bedrock list-inference-profiles --region us-west-2 \
+              #     --query "inferenceProfileSummaries[].inferenceProfileId" --output text
+              model: global.anthropic.claude-sonnet-4-5-20250929-v1:0
       policies:
         ai:
           promptGuard:
@@ -517,9 +729,13 @@ binds:
           provider:
             bedrock:
               region: us-west-2
-              # anthropic.claude-sonnet-4-20250514-v1:0
-              # model: arn:aws:bedrock:us-west-2:606469916935:inference-profile/global.anthropic.claude-sonnet-4-20250514-v1:0
-              model: global.anthropic.claude-sonnet-4-20250514-v1:0
+                # Was global.anthropic.claude-sonnet-4-20250514-v1:0 until Bedrock marked it
+                # Legacy: "This Model is marked by provider as Legacy and you have not been
+                # actively using the model in the last 30 days." Check what your account
+                # can actually reach with:
+                #   aws bedrock list-inference-profiles --region us-west-2 \
+                #     --query "inferenceProfileSummaries[].inferenceProfileId" --output text
+              model: global.anthropic.claude-sonnet-4-5-20250929-v1:0
       policies:
         cors:
           allowOrigins: ["*"]
@@ -786,3 +1002,70 @@ binds:
             - query
             resourceDocumentation: https://ceposta-agw.ngrok.io/secure/mcp/docs
             resourcePolicyUri: https://ceposta-agw.ngrok.io/secure/mcp/policies 
+# ============================================================
+# NEW in 1.5 (model-router path): API-key model access control.
+#
+# This is a SEPARATE serving path from binds: above. It exists because
+# `apiKey.keys[].allowedModels` is enforced in ModelRouter::resolve
+# (llm/model_router.rs:181), which only runs for models declared here -- an inline
+# `ai:` backend under binds: never reaches it. Same architectural split as
+# `ai.routes`: the model-router path and the inline-backend path are not the same
+# code, and features do not automatically apply to both.
+#
+# Served on :4000 (published in docker-compose.yaml) to avoid colliding with the
+# route paths on :3000.
+#
+#   # allowed model -> 200
+#   curl localhost:4000/v1/chat/completions -H 'Authorization: Bearer agw_sk_small' \
+#     -H 'Content-Type: application/json' \
+#     -d '{"model":"cheap","messages":[{"role":"user","content":"hi"}]}'
+#
+#   # model exists but is not on this key's allow-list -> refused
+#   curl localhost:4000/v1/chat/completions -H 'Authorization: Bearer agw_sk_small' \
+#     -H 'Content-Type: application/json' \
+#     -d '{"model":"smart","messages":[{"role":"user","content":"hi"}]}'
+#
+#   # /v1/models is filtered per key -- each key only discovers what it may call
+#   curl localhost:4000/v1/models -H 'Authorization: Bearer agw_sk_small'
+# ============================================================
+llm:
+  port: 4000
+  policies:
+    apiKey:
+      mode: strict
+      location:
+        header: {name: authorization, prefix: 'Bearer '}
+      keys:
+      # Restricted key: may only reach the cheap model.
+      - key: agw_sk_small
+        metadata: {name: Cheap-only key, owner: platform}
+        allowedModels: ["cheap"]
+        budgets:
+        - name: hourly-tokens
+          limit: {unit: Tokens, amount: 500}
+          window: {rolling: 1h}
+          onBudgetExceeded: Block
+      # Unrestricted key: no allowedModels field at all means "no constraint".
+      # (An EMPTY list would mean the opposite -- deny everything.)
+      - key: agw_sk_all
+        metadata: {name: Unrestricted key, owner: platform}
+  providers:
+  - name: openai
+    provider: openAI
+    params:
+      # NOTE: interpolation scans this whole file, comments included. A dollar sign
+      # followed by an uppercase name or a digit is treated as a variable reference and
+      # a missing one aborts startup ("error looking key ... up"). That is why dollar
+      # amounts in comments above are written as USD rather than with a symbol.
+      apiKey: $OPENAI_API_KEY
+  models:
+  - name: cheap
+    provider:
+      reference: openai
+    params:
+      model: gpt-4o-mini
+  - name: smart
+    provider:
+      reference: openai
+    params:
+      model: gpt-4o

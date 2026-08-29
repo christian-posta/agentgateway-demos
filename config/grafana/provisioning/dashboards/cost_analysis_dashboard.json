@@ -39,7 +39,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "(sum(agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"anthropic\",gen_ai_token_type=\"input\"}) * 0.003 + sum(agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"anthropic\",gen_ai_token_type=\"output\"}) * 0.015 + sum(agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"openai\",gen_ai_token_type=\"input\"}) * 0.005 + sum(agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"openai\",gen_ai_token_type=\"output\"}) * 0.015 + sum(agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"gcp.gemini\",gen_ai_token_type=\"input\"}) * 0.0001 + sum(agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"gcp.gemini\",gen_ai_token_type=\"output\"}) * 0.0004) / 1000",
+          "expr": "sum(agentgateway_gen_ai_client_cost_usd_total)",
           "legendFormat": "",
           "range": true,
           "datasource": {
@@ -81,7 +81,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "(sum(agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"openai\",gen_ai_token_type=\"input\"}) * 0.005 + sum(agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"openai\",gen_ai_token_type=\"output\"}) * 0.015) / 1000",
+          "expr": "sum(agentgateway_gen_ai_client_cost_usd_total{gen_ai_system=\"openai\"})",
           "legendFormat": "",
           "range": true,
           "datasource": {
@@ -123,7 +123,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "(sum(agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"anthropic\",gen_ai_token_type=\"input\"}) * 0.003 + sum(agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"anthropic\",gen_ai_token_type=\"output\"}) * 0.015) / 1000",
+          "expr": "sum(agentgateway_gen_ai_client_cost_usd_total{gen_ai_system=\"anthropic\"})",
           "legendFormat": "",
           "range": true,
           "datasource": {
@@ -165,7 +165,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "(sum(agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"gcp.gemini\",gen_ai_token_type=\"input\"}) * 0.0001 + sum(agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"gcp.gemini\",gen_ai_token_type=\"output\"}) * 0.0004) / 1000",
+          "expr": "sum(agentgateway_gen_ai_client_cost_usd_total{gen_ai_system=\"gcp.gemini\"})",
           "legendFormat": "",
           "range": true,
           "datasource": {
@@ -260,28 +260,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "(sum(agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"openai\",gen_ai_token_type=\"input\"}) * 0.005 + sum(agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"openai\",gen_ai_token_type=\"output\"}) * 0.015) / 1000",
-          "legendFormat": "OpenAI",
-          "range": true,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          }
-        },
-        {
-          "refId": "B",
-          "expr": "(sum(agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"anthropic\",gen_ai_token_type=\"input\"}) * 0.003 + sum(agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"anthropic\",gen_ai_token_type=\"output\"}) * 0.015) / 1000",
-          "legendFormat": "Anthropic",
-          "range": true,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          }
-        },
-        {
-          "refId": "C",
-          "expr": "(sum(agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"gcp.gemini\",gen_ai_token_type=\"input\"}) * 0.0001 + sum(agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"gcp.gemini\",gen_ai_token_type=\"output\"}) * 0.0004) / 1000",
-          "legendFormat": "Gemini",
+          "expr": "sum by (gen_ai_system) (agentgateway_gen_ai_client_cost_usd_total)",
+          "legendFormat": "{{gen_ai_system}}",
           "range": true,
           "datasource": {
             "type": "prometheus",
@@ -333,31 +313,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "(sum by (user_name, gen_ai_system) (agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"openai\",gen_ai_token_type=\"input\"}) * 0.005 + sum by (user_name, gen_ai_system) (agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"openai\",gen_ai_token_type=\"output\"}) * 0.015) / 1000",
-          "legendFormat": "",
-          "range": true,
-          "format": "table",
-          "instant": true,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          }
-        },
-        {
-          "refId": "B",
-          "expr": "(sum by (user_name, gen_ai_system) (agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"anthropic\",gen_ai_token_type=\"input\"}) * 0.003 + sum by (user_name, gen_ai_system) (agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"anthropic\",gen_ai_token_type=\"output\"}) * 0.015) / 1000",
-          "legendFormat": "",
-          "range": true,
-          "format": "table",
-          "instant": true,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          }
-        },
-        {
-          "refId": "C",
-          "expr": "(sum by (user_name, gen_ai_system) (agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"gcp.gemini\",gen_ai_token_type=\"input\"}) * 0.0001 + sum by (user_name, gen_ai_system) (agentgateway_gen_ai_client_token_usage_sum{gen_ai_system=\"gcp.gemini\",gen_ai_token_type=\"output\"}) * 0.0004) / 1000",
+          "expr": "sum by (user_name, gen_ai_system) (agentgateway_gen_ai_client_cost_usd_total)",
           "legendFormat": "",
           "range": true,
           "format": "table",
@@ -392,7 +348,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "(sum by (user_name) (agentgateway_gen_ai_client_token_usage_sum{gen_ai_token_type=\"input\",gen_ai_system=\"openai\"}) * 0.005 + sum by (user_name) (agentgateway_gen_ai_client_token_usage_sum{gen_ai_token_type=\"output\",gen_ai_system=\"openai\"}) * 0.015 + sum by (user_name) (agentgateway_gen_ai_client_token_usage_sum{gen_ai_token_type=\"input\",gen_ai_system=\"anthropic\"}) * 0.003 + sum by (user_name) (agentgateway_gen_ai_client_token_usage_sum{gen_ai_token_type=\"output\",gen_ai_system=\"anthropic\"}) * 0.015 + sum by (user_name) (agentgateway_gen_ai_client_token_usage_sum{gen_ai_token_type=\"input\",gen_ai_system=\"gcp.gemini\"}) * 0.0001 + sum by (user_name) (agentgateway_gen_ai_client_token_usage_sum{gen_ai_token_type=\"output\",gen_ai_system=\"gcp.gemini\"}) * 0.0004) / 1000",
+          "expr": "sum by (user_name) (agentgateway_gen_ai_client_cost_usd_total)",
           "legendFormat": "",
           "range": true,
           "format": "table",
@@ -497,7 +453,7 @@
       "targets": [],
       "options": {
         "mode": "markdown",
-        "content": "## Token Pricing (per 1,000 tokens)\n\n### OpenAI GPT-4o\n- **Input**: $0.005 (estimated)\n- **Output**: $0.015 (estimated)\n\n### Anthropic Claude-3.5 Sonnet\n- **Input**: $0.003\n- **Output**: $0.015\n\n### Google Gemini 2.5 Flash-Lite (Standard)\n- **Input**: $0.0001\n- **Output**: $0.0004\n\n---\n\n**Note**: Costs are calculated based on cumulative token usage from agentgateway metrics. The dashboard automatically includes all providers (OpenAI, Anthropic, Gemini) detected in your metrics."
+        "content": "## Where these numbers come from\n\nEvery cost panel reads **`agentgateway_gen_ai_client_cost_usd_total`**, a native counter new in\nagentgateway 1.5. Cost is computed by the gateway from the model cost catalog, not estimated in\nPromQL. This dashboard previously multiplied token counts by prices hardcoded in each panel, which\ndrifted from real pricing and silently ignored cache-read/cache-write tokens.\n\n### Editing prices\n\nRates live in **`config/model-catalog.json`** (`providers.<provider>.models.<id>.rates`, USD per 1M\ntokens), wired up via `config.modelCatalog`. The catalog is reloaded without a restart.\n\n### If a panel reads zero\n\nThe built-in catalog is empty, so an unlisted model is simply not priced. Check:\n\n```\nsum by (status) (agentgateway_cost_catalog_lookups_total)\n```\n\n`status=\"Exact\"` means priced. `Missing` means the model reached the gateway but is not in the\ncatalog -- add it, matching the **provider-reported response model** exactly (lookup is an exact\nmap match, with no prefix or wildcard fallback). Provider keys are agentgateway's own ids:\n`openai`, `anthropic`, `aws.bedrock`, `gcp.gemini`, `gcp.vertex_ai`, `azure`.\n"
       },
       "gridPos": {
         "x": 0,
@@ -505,6 +461,45 @@
         "w": 24,
         "h": 6
       }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 100
+      },
+      "id": 900,
+      "panels": [],
+      "title": "Cost Catalog Health",
+      "type": "row"
+    },
+    {
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 101
+      },
+      "id": 901,
+      "title": "Catalog lookups by resolution status (Missing > 0 means unpriced traffic)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": null,
+          "expr": "sum by (status) (agentgateway_cost_catalog_lookups_total)",
+          "legendFormat": "{{status}}",
+          "refId": "A"
+        }
+      ]
     }
   ],
   "refresh": "10s",
